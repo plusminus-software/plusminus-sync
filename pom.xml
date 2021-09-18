@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>software.plusminus</groupId>
+    <artifactId>plusminus-sync</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <parent>
+        <groupId>software.plusminus</groupId>
+        <artifactId>plusminus-opensource</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
+    <name>Plusminus Sync</name>
+    <description>Java syncronization API for client-server applications.</description>
+    <url>https://github.com/plusminus-software/plusminus-sync</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Taras Shpek</name>
+            <email>taras.shpek@gmail.com</email>
+            <roles>
+                <role>owner</role>
+                <role>developer</role>
+            </roles>
+            <timezone>Europe/Kyiv</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/plusminus-software/plusminus-sync.git</connection>
+        <developerConnection>scm:git:ssh://github.com:plusminus-software/plusminus-sync.git</developerConnection>
+        <url>https://github.com/plusminus-software/plusminus-sync/tree/main</url>
+    </scm>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>company.plusminus</groupId>
+            <artifactId>plusminus-data</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>software.plusminus</groupId>
+            <artifactId>plusminus-audit</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>company.plusminus</groupId>
+            <artifactId>plusminus-json</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>software.plusminus</groupId>
+            <artifactId>plusminus-tenant</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>software.plusminus</groupId>
+            <artifactId>plusminus-security</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>company.plusminus</groupId>
+            <artifactId>plusminus-patch</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!-- Test -->
+        <dependency>
+            <groupId>software.plusminus</groupId>
+            <artifactId>plusminus-test</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>
