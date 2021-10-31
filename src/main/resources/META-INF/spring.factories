@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-software.plusminus.sync.config.SyncConfig
+software.plusminus.sync.config.SyncAutoconfig

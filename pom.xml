@@ -51,7 +51,7 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>company.plusminus</groupId>
+            <groupId>software.plusminus</groupId>
             <artifactId>plusminus-data</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
@@ -61,7 +61,7 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>company.plusminus</groupId>
+            <groupId>software.plusminus</groupId>
             <artifactId>plusminus-json</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
@@ -76,7 +76,7 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>company.plusminus</groupId>
+            <groupId>software.plusminus</groupId>
             <artifactId>plusminus-patch</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
@@ -84,6 +84,12 @@
         <dependency>
             <groupId>software.plusminus</groupId>
             <artifactId>plusminus-test</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>software.plusminus</groupId>
+            <artifactId>plusminus-jwt-test</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>

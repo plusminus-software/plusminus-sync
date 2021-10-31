@@ -1,7 +1,7 @@
 package software.plusminus.sync;
 
-import company.plusminus.json.model.Classable;
 import lombok.Data;
+import software.plusminus.json.model.Classable;
 
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;

@@ -1,8 +1,5 @@
 package software.plusminus.sync.service;
 
-import company.plusminus.data.service.data.DataService;
-import company.plusminus.data.service.entity.EntityService;
-import company.plusminus.json.model.Classable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -19,6 +16,9 @@ import software.plusminus.audit.model.AuditLog;
 import software.plusminus.audit.model.DataAction;
 import software.plusminus.audit.repository.AuditLogRepository;
 import software.plusminus.check.util.JsonUtils;
+import software.plusminus.data.service.data.DataService;
+import software.plusminus.data.service.entity.EntityService;
+import software.plusminus.json.model.Classable;
 import software.plusminus.sync.NoAnnotationsEntity;
 import software.plusminus.sync.TestEntity;
 import software.plusminus.sync.TestEntity2;
@@ -132,6 +132,7 @@ public class AuditSyncServiceTest {
         syncService.write(Collections.singletonList(toSyncItem(entity1)));
     }
 
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private <T extends Classable> Sync<T> toSyncItem(T object) {
         Sync<T> sync = new Sync<>();
         sync.setObject(object);

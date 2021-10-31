@@ -1,7 +1,7 @@
 package software.plusminus.sync.service;
 
-import company.plusminus.json.model.Classable;
 import org.springframework.data.domain.Sort;
+import software.plusminus.json.model.Classable;
 import software.plusminus.sync.dto.Sync;
 
 import java.util.List;

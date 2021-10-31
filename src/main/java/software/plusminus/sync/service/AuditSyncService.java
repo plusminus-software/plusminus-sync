@@ -1,8 +1,5 @@
 package software.plusminus.sync.service;
 
-import company.plusminus.data.service.data.DataService;
-import company.plusminus.data.service.entity.EntityService;
-import company.plusminus.json.model.Classable;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -16,6 +13,9 @@ import software.plusminus.audit.annotation.Auditable;
 import software.plusminus.audit.model.AuditLog;
 import software.plusminus.audit.repository.AuditLogRepository;
 import software.plusminus.audit.service.AuditLogService;
+import software.plusminus.data.service.data.DataService;
+import software.plusminus.data.service.entity.EntityService;
+import software.plusminus.json.model.Classable;
 import software.plusminus.sync.annotation.Syncable;
 import software.plusminus.sync.dto.Deleted;
 import software.plusminus.sync.dto.Sync;

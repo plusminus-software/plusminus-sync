@@ -2,10 +2,10 @@ package software.plusminus.sync.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import company.plusminus.json.model.Classable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import software.plusminus.json.model.Classable;
 
 @Data
 @NoArgsConstructor

@@ -1,6 +1,5 @@
 package software.plusminus.sync.controller;
 
-import company.plusminus.json.model.Classable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.domain.Sort;
@@ -10,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import software.plusminus.json.model.Classable;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.service.SyncService;
 

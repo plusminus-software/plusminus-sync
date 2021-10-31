@@ -1,7 +1,6 @@
 package software.plusminus.sync.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import company.plusminus.json.model.Classable;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,6 +14,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.hibernate.HibernateFilterInterceptor;
+import software.plusminus.json.model.Classable;
 import software.plusminus.sync.TestEntity;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
@@ -111,6 +111,7 @@ public class SyncControllerTest {
         check(body).is('[' + json + ']');
     }
 
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private <T extends Classable> Sync<T> toSyncItem(T object) {
         Sync<T> sync = new Sync<>();
         sync.setType(SyncType.CREATE);

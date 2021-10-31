@@ -1,12 +1,12 @@
 package software.plusminus.sync;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import company.plusminus.json.model.Classable;
 import lombok.Data;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import software.plusminus.audit.annotation.Auditable;
+import software.plusminus.json.model.Classable;
 import software.plusminus.sync.annotation.Syncable;
 import software.plusminus.tenant.annotation.Tenant;
 
