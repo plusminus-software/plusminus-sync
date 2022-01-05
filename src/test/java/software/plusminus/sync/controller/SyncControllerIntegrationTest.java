@@ -2,6 +2,7 @@ package software.plusminus.sync.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -120,7 +121,7 @@ public class SyncControllerIntegrationTest {
                 Sync.of(entity2, SyncType.CREATE, 2L));
 
         String body = mvc
-                .perform(get("/sync?types=TestEntity&ignoreDevice=TestDevice&offset=1&size=10&direction=DESC")
+                .perform(get("/sync?types=TestEntity&excludeCurrentDevice=false&offset=1&size=10&direction=DESC")
                         .cookie(authenticationCookie))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -226,7 +227,7 @@ public class SyncControllerIntegrationTest {
     private Cookie getAuthenticationCookie() {
         String token = authenticationService.generateToken(AuthenticationParameters.builder()
                 .username("TestUser")
-                .otherParameters(Collections.singletonMap("tenant", TENANT))
+                .otherParameters(ImmutableMap.of("tenant", TENANT, "device", "TestDevice"))
                 .build());
         return new Cookie(securityProperties.getCookieName(), token);
     }

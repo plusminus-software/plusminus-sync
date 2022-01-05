@@ -16,6 +16,7 @@ import software.plusminus.audit.service.AuditLogService;
 import software.plusminus.data.service.data.DataService;
 import software.plusminus.data.service.entity.EntityService;
 import software.plusminus.json.model.Classable;
+import software.plusminus.security.context.DeviceContext;
 import software.plusminus.sync.annotation.Syncable;
 import software.plusminus.sync.dto.Deleted;
 import software.plusminus.sync.dto.Sync;
@@ -39,9 +40,11 @@ public class AuditSyncService implements SyncService {
     private DataService dataService;
     @Autowired
     private AuditLogRepository auditLogRepository;
+    @Autowired
+    private DeviceContext deviceContext;
 
     @Override
-    public List<Sync<? extends Classable>> read(List<String> types, String ignoreDevice,
+    public List<Sync<? extends Classable>> read(List<String> types, boolean excludeCurrentDevice,
                                                 Long offset, Integer size,
                                                 Sort.Direction direction) {
 
@@ -52,9 +55,16 @@ public class AuditSyncService implements SyncService {
                 .collect(Collectors.toList());
 
         Pageable pageable = PageRequest.of(0, size, Sort.by(direction, "number"));
-        Page<AuditLog<? extends Classable>> page =
-                auditLogRepository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
-                        types, ignoreDevice, offset, pageable);
+        Page<AuditLog<? extends Classable>> page;
+        if (excludeCurrentDevice) {
+            String ignoreDevice = deviceContext.currentDevice();
+            page = auditLogRepository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
+                    types, ignoreDevice, offset, pageable); 
+        } else {
+            page = auditLogRepository.findByEntityTypeInAndNumberGreaterThanAndCurrentTrue(
+                    types, offset, pageable);
+        }
+                
 
         return page.getContent().stream()
                 .map(this::toSync)

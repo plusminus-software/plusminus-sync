@@ -19,6 +19,7 @@ import software.plusminus.check.util.JsonUtils;
 import software.plusminus.data.service.data.DataService;
 import software.plusminus.data.service.entity.EntityService;
 import software.plusminus.json.model.Classable;
+import software.plusminus.security.context.DeviceContext;
 import software.plusminus.sync.NoAnnotationsEntity;
 import software.plusminus.sync.TestEntity;
 import software.plusminus.sync.TestEntity2;
@@ -39,6 +40,8 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class AuditSyncServiceTest {
 
+    @Mock
+    private DeviceContext deviceContext;
     @Mock
     private DataService dataService;
     @Mock
@@ -76,22 +79,23 @@ public class AuditSyncServiceTest {
         auditLog3.setAction(DataAction.DELETE);
 
         List<String> types = Arrays.asList("Type1", "Type2");
-        String ignoreSuppliers = "test client";
+        String ignoreDevice = "test client";
         Long offset = 4L;
         Pageable pageable = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "number"));
         Page<AuditLog<?>> page = new PageImpl(Arrays.asList(auditLog1, auditLog2, auditLog3), pageable, 100L);
         when(auditLogRepository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
                 Arrays.asList(TestEntity.class.getName(), TestEntity2.class.getName()),
-                ignoreSuppliers,
+                ignoreDevice,
                 offset,
                 pageable))
                 .thenReturn(page);
+        when(deviceContext.currentDevice()).thenReturn(ignoreDevice);
         when(entityService.findClass("Type1")).thenReturn((Class) TestEntity.class);
         when(entityService.findClass("Type2")).thenReturn((Class) TestEntity2.class);
 
         // when
         List<Sync<? extends Classable>> entities = syncService.read(
-                types, ignoreSuppliers, offset, 3, Sort.Direction.DESC);
+                types, true, offset, 3, Sort.Direction.DESC);
 
         // then
         assertThat(entities).containsExactly(
@@ -103,7 +107,7 @@ public class AuditSyncServiceTest {
     @Test(expected = SyncException.class)
     public void readIncorrectEntity() {
         when(entityService.findClass("Type1")).thenReturn((Class) NoAnnotationsEntity.class);
-        syncService.read(Collections.singletonList("Type1"), "test client", 4L, 3, Sort.Direction.DESC);
+        syncService.read(Collections.singletonList("Type1"), true, 4L, 3, Sort.Direction.DESC);
     }
 
     @Test

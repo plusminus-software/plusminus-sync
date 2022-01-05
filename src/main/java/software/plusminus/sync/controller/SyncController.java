@@ -33,12 +33,12 @@ public class SyncController {
     @Validated(Read.class)
     @Valid
     public List<Sync<? extends Classable>> read(@RequestParam List<String> types,
-                                                @RequestParam(defaultValue = "null") String ignoreDevice,
+                                                @RequestParam(defaultValue = "true") boolean excludeCurrentDevice,
                                                 @RequestParam(defaultValue = "0") Long offset,
                                                 @RequestParam(defaultValue = "20") Integer size,
                                                 @RequestParam(defaultValue = "ASC") Sort.Direction direction) {
 
-        return syncService.read(types, ignoreDevice, offset, size, direction);
+        return syncService.read(types, excludeCurrentDevice, offset, size, direction);
     }
 
     @PostMapping

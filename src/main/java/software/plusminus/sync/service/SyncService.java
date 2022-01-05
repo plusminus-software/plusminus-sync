@@ -9,7 +9,7 @@ import java.util.List;
 @SuppressWarnings("squid:S1452")
 public interface SyncService {
 
-    List<Sync<? extends Classable>> read(List<String> types, String ignoreDevice,
+    List<Sync<? extends Classable>> read(List<String> types, boolean excludeCurrentDevice,
                                          Long offset, Integer size,
                                          Sort.Direction direction);
 

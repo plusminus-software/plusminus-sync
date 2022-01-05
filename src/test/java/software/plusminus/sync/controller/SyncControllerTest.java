@@ -61,12 +61,12 @@ public class SyncControllerTest {
         List<Sync<? extends Classable>> syncs = singletonList(Sync.of(
                 JsonUtils.fromJson("/json/test-entity.json", TestEntity.class),
                 SyncType.CREATE, 1L));
-        when(service.read(singletonList("TestEntity"), "TestDevice", 20L, 30, Sort.Direction.DESC))
+        when(service.read(singletonList("TestEntity"), true, 20L, 30, Sort.Direction.DESC))
                 .thenReturn(syncs);
 
         String body = mvc
                 .perform(get("/sync?types=TestEntity"
-                        + "&ignoreDevice=TestDevice&offset=20&size=30&direction=DESC"))
+                        + "&excludeCurrentDevice=true&offset=20&size=30&direction=DESC"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn()
@@ -78,7 +78,7 @@ public class SyncControllerTest {
 
     @Test
     public void readWithDefaultParameters() throws Exception {
-        when(service.read(singletonList("TestEntity"), null, 0L, 20, Sort.Direction.ASC))
+        when(service.read(singletonList("TestEntity"), true, 0L, 20, Sort.Direction.ASC))
                 .thenReturn(Collections.emptyList());
 
         String body = mvc.perform(get("/sync?types=TestEntity"))
