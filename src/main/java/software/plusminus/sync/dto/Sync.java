@@ -5,10 +5,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import software.plusminus.json.model.Classable;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Null;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor(staticName = "of")
 public class Sync<T extends Classable> {
+    
     private T object;
+    
     private SyncType type;
+    
+    @NotNull(groups = Read.class)
+    @Null(groups = Write.class)
+    private Long index;
+    
 }

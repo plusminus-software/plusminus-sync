@@ -116,11 +116,11 @@ public class SyncControllerIntegrationTest {
     @Test
     public void read() throws Exception {
         List<Sync<TestEntity>> actions = Arrays.asList(
-                Sync.of(entitySoftlyDeleted, SyncType.CREATE),
-                Sync.of(entity2, SyncType.CREATE));
+                Sync.of(entitySoftlyDeleted, SyncType.CREATE, 5L),
+                Sync.of(entity2, SyncType.CREATE, 2L));
 
         String body = mvc
-                .perform(get("/sync?types=TestEntity&ignoreDevice=TestDevice&fromAuditNumber=1&size=10&direction=DESC")
+                .perform(get("/sync?types=TestEntity&ignoreDevice=TestDevice&offset=1&size=10&direction=DESC")
                         .cookie(authenticationCookie))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -134,9 +134,9 @@ public class SyncControllerIntegrationTest {
     @Test
     public void readWithDefaultParameters() throws Exception {
         List<Sync<TestEntity>> actions = Arrays.asList(
-                Sync.of(entity1, SyncType.CREATE),
-                Sync.of(entity2, SyncType.CREATE),
-                Sync.of(entitySoftlyDeleted, SyncType.CREATE));
+                Sync.of(entity1, SyncType.CREATE, 1L),
+                Sync.of(entity2, SyncType.CREATE, 2L),
+                Sync.of(entitySoftlyDeleted, SyncType.CREATE, 5L));
 
         String body = mvc.perform(get("/sync?types=TestEntity")
                 .cookie(authenticationCookie))
@@ -155,9 +155,9 @@ public class SyncControllerIntegrationTest {
         transactionalService.inTransaction(() -> entity2 = entityManager.merge(entity2));
 
         List<Sync<TestEntity>> actions = Collections.singletonList(
-                Sync.of(entity2, SyncType.UPDATE));
+                Sync.of(entity2, SyncType.UPDATE, 6L));
 
-        String body = mvc.perform(get("/sync?types=TestEntity&fromAuditNumber=5")
+        String body = mvc.perform(get("/sync?types=TestEntity&offset=5")
                 .cookie(authenticationCookie))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -173,7 +173,7 @@ public class SyncControllerIntegrationTest {
         transactionalService.inTransaction(() ->
                 entityManager.remove(entityManager.merge(entity2)));
 
-        String body = mvc.perform(get("/sync?types=TestEntity&fromAuditNumber=5")
+        String body = mvc.perform(get("/sync?types=TestEntity&offset=5")
                 .cookie(authenticationCookie))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -199,9 +199,9 @@ public class SyncControllerIntegrationTest {
         newEntity.setMyField("new entity field");
 
         List<Sync<TestEntity>> items = Arrays.asList(
-                Sync.of(entityOne, SyncType.UPDATE),
-                Sync.of(entityTwo, SyncType.DELETE),
-                Sync.of(newEntity, SyncType.CREATE));
+                Sync.of(entityOne, SyncType.UPDATE, null),
+                Sync.of(entityTwo, SyncType.DELETE, null),
+                Sync.of(newEntity, SyncType.CREATE, null));
         String json = mapper.writerFor(new TypeReference<List<Sync<TestEntity>>>() {})
                 .writeValueAsString(items);
 

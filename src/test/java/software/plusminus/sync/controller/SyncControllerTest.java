@@ -60,13 +60,13 @@ public class SyncControllerTest {
     public void read() throws Exception {
         List<Sync<? extends Classable>> syncs = singletonList(Sync.of(
                 JsonUtils.fromJson("/json/test-entity.json", TestEntity.class),
-                SyncType.CREATE));
+                SyncType.CREATE, 1L));
         when(service.read(singletonList("TestEntity"), "TestDevice", 20L, 30, Sort.Direction.DESC))
                 .thenReturn(syncs);
 
         String body = mvc
                 .perform(get("/sync?types=TestEntity"
-                        + "&ignoreDevice=TestDevice&fromAuditNumber=20&size=30&direction=DESC"))
+                        + "&ignoreDevice=TestDevice&offset=20&size=30&direction=DESC"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andReturn()

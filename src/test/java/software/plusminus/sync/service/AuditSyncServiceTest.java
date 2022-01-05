@@ -62,25 +62,28 @@ public class AuditSyncServiceTest {
         Deleted deleted = Deleted.of(TestEntity.class.getSimpleName(), 4L);
 
         AuditLog<TestEntity> auditLog1 = new AuditLog<>();
+        auditLog1.setNumber(5L);
         auditLog1.setEntity(entity1);
         auditLog1.setAction(DataAction.CREATE);
         AuditLog<TestEntity> auditLog2 = new AuditLog<>();
+        auditLog2.setNumber(6L);
         auditLog2.setEntity(entity2);
         auditLog2.setAction(DataAction.UPDATE);
         AuditLog<TestEntity> auditLog3 = new AuditLog<>();
+        auditLog3.setNumber(7L);
         auditLog3.setEntityId(4L);
         auditLog3.setEntityType(TestEntity.class.getName());
         auditLog3.setAction(DataAction.DELETE);
 
         List<String> types = Arrays.asList("Type1", "Type2");
         String ignoreSuppliers = "test client";
-        Long fromWriteNumber = 4L;
+        Long offset = 4L;
         Pageable pageable = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "number"));
         Page<AuditLog<?>> page = new PageImpl(Arrays.asList(auditLog1, auditLog2, auditLog3), pageable, 100L);
         when(auditLogRepository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
                 Arrays.asList(TestEntity.class.getName(), TestEntity2.class.getName()),
                 ignoreSuppliers,
-                fromWriteNumber,
+                offset,
                 pageable))
                 .thenReturn(page);
         when(entityService.findClass("Type1")).thenReturn((Class) TestEntity.class);
@@ -88,13 +91,13 @@ public class AuditSyncServiceTest {
 
         // when
         List<Sync<? extends Classable>> entities = syncService.read(
-                types, ignoreSuppliers, fromWriteNumber, 3, Sort.Direction.DESC);
+                types, ignoreSuppliers, offset, 3, Sort.Direction.DESC);
 
         // then
         assertThat(entities).containsExactly(
-                Sync.of(entity1, SyncType.CREATE),
-                Sync.of(entity2, SyncType.UPDATE),
-                Sync.of(deleted, SyncType.DELETE));
+                Sync.of(entity1, SyncType.CREATE, 5L),
+                Sync.of(entity2, SyncType.UPDATE, 6L),
+                Sync.of(deleted, SyncType.DELETE, 7L));
     }
     
     @Test(expected = SyncException.class)

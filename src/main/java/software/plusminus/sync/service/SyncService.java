@@ -10,7 +10,7 @@ import java.util.List;
 public interface SyncService {
 
     List<Sync<? extends Classable>> read(List<String> types, String ignoreDevice,
-                                         Long fromAuditNumber, Integer size,
+                                         Long offset, Integer size,
                                          Sort.Direction direction);
 
     <T extends Classable> List<? extends T> write(List<Sync<? extends T>> actions);

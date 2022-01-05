@@ -42,7 +42,7 @@ public class AuditSyncService implements SyncService {
 
     @Override
     public List<Sync<? extends Classable>> read(List<String> types, String ignoreDevice,
-                                                Long fromAuditNumber, Integer size,
+                                                Long offset, Integer size,
                                                 Sort.Direction direction) {
 
         types = types.stream()
@@ -54,7 +54,7 @@ public class AuditSyncService implements SyncService {
         Pageable pageable = PageRequest.of(0, size, Sort.by(direction, "number"));
         Page<AuditLog<? extends Classable>> page =
                 auditLogRepository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
-                        types, ignoreDevice, fromAuditNumber, pageable);
+                        types, ignoreDevice, offset, pageable);
 
         return page.getContent().stream()
                 .map(this::toSync)
@@ -90,12 +90,12 @@ public class AuditSyncService implements SyncService {
         switch (auditLog.getAction()) {
             case CREATE:
                 entity = unproxy(auditLog.getEntity());
-                return Sync.of(entity, SyncType.CREATE);
+                return Sync.of(entity, SyncType.CREATE, auditLog.getNumber());
             case UPDATE:
                 entity = unproxy(auditLog.getEntity());
-                return Sync.of(entity, SyncType.UPDATE);
+                return Sync.of(entity, SyncType.UPDATE, auditLog.getNumber());
             case DELETE:
-                return Sync.of(toDeleted(auditLog), SyncType.DELETE);
+                return Sync.of(toDeleted(auditLog), SyncType.DELETE, auditLog.getNumber());
             default:
                 throw new SyncException("Unknow auditLog action " + auditLog.getAction());
         }

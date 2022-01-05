@@ -3,5 +3,6 @@
     "class": "TestEntity",
     "id": 2
   },
-  "type": "DELETE"
+  "type": "DELETE",
+  "index": 6
 } ]
