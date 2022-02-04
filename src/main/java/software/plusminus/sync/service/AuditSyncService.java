@@ -9,13 +9,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import software.plusminus.audit.annotation.Auditable;
 import software.plusminus.audit.model.AuditLog;
 import software.plusminus.audit.repository.AuditLogRepository;
 import software.plusminus.audit.service.AuditLogService;
 import software.plusminus.data.service.data.DataService;
 import software.plusminus.data.service.entity.EntityService;
-import software.plusminus.json.model.Classable;
+import software.plusminus.json.model.ApiObject;
 import software.plusminus.security.context.DeviceContext;
 import software.plusminus.sync.annotation.Syncable;
 import software.plusminus.sync.dto.Deleted;
@@ -44,9 +45,9 @@ public class AuditSyncService implements SyncService {
     private DeviceContext deviceContext;
 
     @Override
-    public List<Sync<? extends Classable>> read(List<String> types, boolean excludeCurrentDevice,
-                                                Long offset, Integer size,
-                                                Sort.Direction direction) {
+    public List<Sync<? extends ApiObject>> read(List<String> types, boolean excludeCurrentDevice,
+                           Long offset, Integer size,
+                           Sort.Direction direction) {
 
         types = types.stream()
                 .map(entityService::findClass)
@@ -55,7 +56,7 @@ public class AuditSyncService implements SyncService {
                 .collect(Collectors.toList());
 
         Pageable pageable = PageRequest.of(0, size, Sort.by(direction, "number"));
-        Page<AuditLog<? extends Classable>> page;
+        Page<AuditLog<? extends ApiObject>> page;
         if (excludeCurrentDevice) {
             String ignoreDevice = deviceContext.currentDevice();
             page = auditLogRepository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
@@ -72,12 +73,13 @@ public class AuditSyncService implements SyncService {
     }
 
     @Override
-    public <T extends Classable> List<? extends T> write(List<Sync<? extends T>> actions) {
+    @Transactional
+    public List<? extends ApiObject> write(List<Sync<? extends ApiObject>> actions) {
         return actions.stream()
-                .peek(action -> checkAnnotations(action.getObject().getClass()))
-                .map(item -> {
-                    T entity = item.getObject();
-                    switch (item.getType()) {
+                .map(action -> {
+                    checkAnnotations(action.getObject().getClass());
+                    ApiObject entity = action.getObject();
+                    switch (action.getType()) {
                         case CREATE:
                             return dataService.create(entity);
                         case UPDATE:
@@ -88,26 +90,26 @@ public class AuditSyncService implements SyncService {
                             dataService.delete(entity);
                             return null;
                         default:
-                            throw new SyncException("Can't sync: unknown " + item.getType() + " sync type");
+                            throw new SyncException("Can't sync: unknown " + action.getType() + " sync type");
                     }
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private Sync<? extends Classable> toSync(AuditLog<? extends Classable> auditLog) {
-        Classable entity;
+    private Sync<? extends ApiObject> toSync(AuditLog<? extends ApiObject> auditLog) {
+        ApiObject object;
         switch (auditLog.getAction()) {
             case CREATE:
-                entity = unproxy(auditLog.getEntity());
-                return Sync.of(entity, SyncType.CREATE, auditLog.getNumber());
+                object = unproxy(auditLog.getEntity());
+                return Sync.of(object, SyncType.CREATE, auditLog.getNumber());
             case UPDATE:
-                entity = unproxy(auditLog.getEntity());
-                return Sync.of(entity, SyncType.UPDATE, auditLog.getNumber());
+                object = unproxy(auditLog.getEntity());
+                return Sync.of(object, SyncType.UPDATE, auditLog.getNumber());
             case DELETE:
                 return Sync.of(toDeleted(auditLog), SyncType.DELETE, auditLog.getNumber());
             default:
-                throw new SyncException("Unknow auditLog action " + auditLog.getAction());
+                throw new SyncException("Unknown auditLog action " + auditLog.getAction());
         }
     }
 

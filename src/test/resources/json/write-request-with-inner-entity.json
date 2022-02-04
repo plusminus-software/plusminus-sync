@@ -1,0 +1,27 @@
+[
+  {
+    "object": {
+      "class": "TestEntity",
+      "myField": "Some value",
+      "tenant": "localhost",
+      "innerEntity": {
+        "class": "InnerEntity",
+        "myField": "Some value",
+        "tenant": "localhost",
+        ":unknown": "some unknown field",
+        "@id": "3"
+      },
+      ":unknown": "some unknown field",
+      "@id": "2"
+    },
+    "type": "CREATE",
+    "@id": "1"
+  },
+  {
+    "object": {
+      "@ref": "3"
+    },
+    "type": "CREATE",
+    "@id": "4"
+  }
+]

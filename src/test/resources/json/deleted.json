@@ -1,0 +1,12 @@
+[
+  {
+    "@id": "1",
+    "object": {
+      "@id": "2",
+      "class": "TestEntity",
+      "id": 2
+    },
+    "type": "DELETE",
+    "index": 6
+  }
+]

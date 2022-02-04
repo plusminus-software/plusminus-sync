@@ -1,0 +1,21 @@
+[
+  {
+    "@id": "1",
+    "class": "TestEntity",
+    "id": 6,
+    "myField": "Some value",
+    "version": 0,
+    "tenant": "localhost",
+    "innerEntity": {
+      "@id": "2",
+      "class": "InnerEntity",
+      "id": 1,
+      "myField": "Some value",
+      "version": 0,
+      "tenant": "localhost"
+    }
+  },
+  {
+    "@ref": "2"
+  }
+]

@@ -14,7 +14,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.hibernate.HibernateFilterInterceptor;
-import software.plusminus.json.model.Classable;
+import software.plusminus.json.model.ApiObject;
 import software.plusminus.sync.TestEntity;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
@@ -37,7 +37,7 @@ import static software.plusminus.check.Checks.check;
 
 @RunWith(SpringRunner.class)
 // AuditSyncService must be registered because of @ConditionalOnBean(SyncService.class) on SyncController
-@WebMvcTest(controllers = {SyncController.class, AuditSyncService.class})
+@WebMvcTest(controllers = { SyncController.class, AuditSyncService.class })
 @ActiveProfiles("test")
 public class SyncControllerTest {
 
@@ -58,8 +58,8 @@ public class SyncControllerTest {
     
     @Test
     public void read() throws Exception {
-        List<Sync<? extends Classable>> syncs = singletonList(Sync.of(
-                JsonUtils.fromJson("/json/test-entity.json", TestEntity.class),
+        List<Sync<? extends ApiObject>> syncs = singletonList(Sync.of(
+                JsonUtils.fromJson("/json/entity.json", TestEntity.class),
                 SyncType.CREATE, 1L));
         when(service.read(singletonList("TestEntity"), true, 20L, 30, Sort.Direction.DESC))
                 .thenReturn(syncs);
@@ -93,9 +93,9 @@ public class SyncControllerTest {
 
     @Test
     public void write() throws Exception {
-        String json = ResourceUtils.toString("/json/test-entity.json");
+        String json = ResourceUtils.toString("/json/entity.json");
         TestEntity entity = JsonUtils.fromJson(json, TestEntity.class);
-        List<Sync<? extends Classable>> items = singletonList(toSyncItem(entity));
+        List<Sync<? extends ApiObject>> items = singletonList(toSyncItem(entity));
         List<TestEntity> entities = singletonList(entity);
         doReturn(entities).when(service).write(items);
 
@@ -111,8 +111,7 @@ public class SyncControllerTest {
         check(body).is('[' + json + ']');
     }
 
-    @SuppressWarnings("PMD.UnusedPrivateMethod")
-    private <T extends Classable> Sync<T> toSyncItem(T object) {
+    private <T extends ApiObject> Sync<T> toSyncItem(T object) {
         Sync<T> sync = new Sync<>();
         sync.setType(SyncType.CREATE);
         sync.setObject(object);

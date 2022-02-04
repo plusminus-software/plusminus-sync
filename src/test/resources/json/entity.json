@@ -1,4 +1,5 @@
 {
+  "@id": "1",
   "class": "TestEntity",
   "id": 1,
   "myField": "Some value",

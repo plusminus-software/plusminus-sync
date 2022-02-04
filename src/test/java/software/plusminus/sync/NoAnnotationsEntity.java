@@ -1,14 +1,14 @@
 package software.plusminus.sync;
 
 import lombok.Data;
-import software.plusminus.json.model.Classable;
+import software.plusminus.json.model.ApiObject;
 
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Version;
 
 @Data
-public class NoAnnotationsEntity implements Classable {
+public class NoAnnotationsEntity implements ApiObject {
 
     @Id
     @GeneratedValue

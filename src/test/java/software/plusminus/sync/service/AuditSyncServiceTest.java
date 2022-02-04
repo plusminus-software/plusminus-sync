@@ -18,11 +18,11 @@ import software.plusminus.audit.repository.AuditLogRepository;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.data.service.data.DataService;
 import software.plusminus.data.service.entity.EntityService;
-import software.plusminus.json.model.Classable;
+import software.plusminus.json.model.ApiObject;
 import software.plusminus.security.context.DeviceContext;
+import software.plusminus.sync.InnerEntity;
 import software.plusminus.sync.NoAnnotationsEntity;
 import software.plusminus.sync.TestEntity;
-import software.plusminus.sync.TestEntity2;
 import software.plusminus.sync.dto.Deleted;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
@@ -84,17 +84,17 @@ public class AuditSyncServiceTest {
         Pageable pageable = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "number"));
         Page<AuditLog<?>> page = new PageImpl(Arrays.asList(auditLog1, auditLog2, auditLog3), pageable, 100L);
         when(auditLogRepository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
-                Arrays.asList(TestEntity.class.getName(), TestEntity2.class.getName()),
+                Arrays.asList(TestEntity.class.getName(), InnerEntity.class.getName()),
                 ignoreDevice,
                 offset,
                 pageable))
                 .thenReturn(page);
         when(deviceContext.currentDevice()).thenReturn(ignoreDevice);
         when(entityService.findClass("Type1")).thenReturn((Class) TestEntity.class);
-        when(entityService.findClass("Type2")).thenReturn((Class) TestEntity2.class);
+        when(entityService.findClass("Type2")).thenReturn((Class) InnerEntity.class);
 
         // when
-        List<Sync<? extends Classable>> entities = syncService.read(
+        List<Sync<? extends ApiObject>> entities = syncService.read(
                 types, true, offset, 3, Sort.Direction.DESC);
 
         // then
@@ -140,7 +140,7 @@ public class AuditSyncServiceTest {
     }
 
     @SuppressWarnings("PMD.UnusedPrivateMethod")
-    private <T extends Classable> Sync<T> toSyncItem(T object) {
+    private <T extends ApiObject> Sync<T> toSyncItem(T object) {
         Sync<T> sync = new Sync<>();
         sync.setObject(object);
         sync.setType(SyncType.CREATE);
@@ -148,7 +148,7 @@ public class AuditSyncServiceTest {
     }
 
     private TestEntity readTestEntity() {
-        return JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
+        return JsonUtils.fromJson("/json/entity.json", TestEntity.class);
     }
     
     private NoAnnotationsEntity readNoAnnotationsEntity() {
