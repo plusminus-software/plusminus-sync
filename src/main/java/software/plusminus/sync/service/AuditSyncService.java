@@ -76,6 +76,16 @@ public class AuditSyncService implements SyncService {
     @Transactional
     public List<? extends ApiObject> write(List<Sync<? extends ApiObject>> actions) {
         return actions.stream()
+                .sorted((left, right) -> {
+                    if (left.getType() == right.getType()) {
+                        return 0;
+                    } else if (left.getType() == SyncType.CREATE) {
+                        return -1;
+                    } else if (right.getType() == SyncType.CREATE) {
+                        return 1;
+                    }
+                    return 0;
+                })
                 .map(action -> {
                     checkAnnotations(action.getObject().getClass());
                     ApiObject entity = action.getObject();
