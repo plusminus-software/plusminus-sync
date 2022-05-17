@@ -111,6 +111,7 @@ public class SyncControllerTest {
         check(body).is('[' + json + ']');
     }
 
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private <T extends ApiObject> Sync<T> toSyncItem(T object) {
         Sync<T> sync = new Sync<>();
         sync.setType(SyncType.CREATE);

@@ -6,6 +6,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -27,7 +28,9 @@ import software.plusminus.sync.dto.Deleted;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.exception.SyncException;
+import software.plusminus.sync.service.listener.SyncListener;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +49,8 @@ public class AuditSyncServiceTest {
     private DataService dataService;
     @Mock
     private EntityService entityService;
+    @Spy
+    private List<SyncListener> listeners = new ArrayList<>(); 
     @Mock
     private AuditLogRepository auditLogRepository;
 

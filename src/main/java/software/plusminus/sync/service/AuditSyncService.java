@@ -23,6 +23,7 @@ import software.plusminus.sync.dto.Deleted;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.exception.SyncException;
+import software.plusminus.sync.service.listener.SyncListener;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import javax.persistence.Entity;
 
 @Service
 @ConditionalOnBean(AuditLogService.class)
+@SuppressWarnings("squid:S3864")
 public class AuditSyncService implements SyncService {
 
     @Autowired
@@ -43,6 +45,8 @@ public class AuditSyncService implements SyncService {
     private AuditLogRepository auditLogRepository;
     @Autowired
     private DeviceContext deviceContext;
+    @Autowired
+    private List<SyncListener> listeners;
 
     @Override
     public List<Sync<? extends ApiObject>> read(List<String> types, boolean excludeCurrentDevice,
@@ -69,13 +73,14 @@ public class AuditSyncService implements SyncService {
 
         return page.getContent().stream()
                 .map(this::toSync)
+                .peek(sync -> listeners.forEach(l -> l.onRead(sync)))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public List<? extends ApiObject> write(List<Sync<? extends ApiObject>> actions) {
-        return actions.stream()
+    public List<? extends ApiObject> write(List<Sync<? extends ApiObject>> syncs) {
+        return syncs.stream()
                 .sorted((left, right) -> {
                     if (left.getType() == right.getType()) {
                         return 0;
@@ -86,10 +91,11 @@ public class AuditSyncService implements SyncService {
                     }
                     return 0;
                 })
-                .map(action -> {
-                    checkAnnotations(action.getObject().getClass());
-                    ApiObject entity = action.getObject();
-                    switch (action.getType()) {
+                .peek(sync -> listeners.forEach(l -> l.onWrite(sync)))
+                .map(sync -> {
+                    checkAnnotations(sync.getObject().getClass());
+                    ApiObject entity = sync.getObject();
+                    switch (sync.getType()) {
                         case CREATE:
                             return dataService.create(entity);
                         case UPDATE:
@@ -100,7 +106,7 @@ public class AuditSyncService implements SyncService {
                             dataService.delete(entity);
                             return null;
                         default:
-                            throw new SyncException("Can't sync: unknown " + action.getType() + " sync type");
+                            throw new SyncException("Can't sync: unknown " + sync.getType() + " sync type");
                     }
                 })
                 .filter(Objects::nonNull)
