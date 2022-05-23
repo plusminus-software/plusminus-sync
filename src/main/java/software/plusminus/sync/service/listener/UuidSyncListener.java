@@ -1,5 +1,6 @@
 package software.plusminus.sync.service.listener;
 
+import com.zaxxer.hikari.util.FastList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,10 +9,10 @@ import software.plusminus.json.model.ApiObject;
 import software.plusminus.sync.annotation.Uuid;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
-import software.plusminus.util.ClassUtils;
 import software.plusminus.util.FieldUtils;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -30,7 +31,8 @@ public class UuidSyncListener implements SyncListener {
         }
         
         T entity = sync.getObject();
-        Set allObjects = FieldUtils.getDeepFieldValues(entity, field -> !ClassUtils.isJvmClass(field.getType()));
+        Set allObjects = FieldUtils.getDeepFieldValues(entity,
+                field -> isSupportedType(field.getType()));
         allObjects.add(entity);
         allObjects.forEach(this::addMissedUuid);
     }
@@ -46,5 +48,13 @@ public class UuidSyncListener implements SyncListener {
             FieldUtils.write(entity, generatedUuid, uuidField.get());
             repository.save(entity);
         }
+    }
+    
+    private boolean isSupportedType(Class c) {
+        if (Collections.class.isAssignableFrom(c)
+                && !FastList.class.isAssignableFrom(c)) {
+            return true;
+        }
+        return c == UUID.class || c == String.class;
     }
 }
