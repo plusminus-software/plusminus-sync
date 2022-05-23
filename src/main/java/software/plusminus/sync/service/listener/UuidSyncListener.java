@@ -7,6 +7,7 @@ import software.plusminus.data.repository.DataRepository;
 import software.plusminus.json.model.ApiObject;
 import software.plusminus.sync.annotation.Uuid;
 import software.plusminus.sync.dto.Sync;
+import software.plusminus.sync.dto.SyncType;
 import software.plusminus.util.ClassUtils;
 import software.plusminus.util.FieldUtils;
 
@@ -24,6 +25,10 @@ public class UuidSyncListener implements SyncListener {
     @Override
     @Transactional
     public <T extends ApiObject> void onRead(Sync<T> sync) {
+        if (sync.getType() == SyncType.DELETE) {
+            return;
+        }
+        
         T entity = sync.getObject();
         Set allObjects = FieldUtils.getDeepFieldValues(entity, field -> !ClassUtils.isJvmClass(field.getType()));
         allObjects.add(entity);
