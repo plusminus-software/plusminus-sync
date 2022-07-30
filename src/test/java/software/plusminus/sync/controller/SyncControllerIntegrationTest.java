@@ -1,13 +1,7 @@
 package software.plusminus.sync.controller;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,29 +9,32 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import software.plusminus.authentication.AuthenticationParameters;
-import software.plusminus.authentication.AuthenticationService;
-import software.plusminus.check.exception.JsonException;
 import software.plusminus.check.util.JsonUtils;
-import software.plusminus.context.Context;
-import software.plusminus.security.properties.SecurityProperties;
+import software.plusminus.jwt.service.JwtGenerator;
+import software.plusminus.security.Security;
+import software.plusminus.security.context.SecurityContext;
 import software.plusminus.sync.TestEntity;
 import software.plusminus.sync.TransactionalService;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
+import software.plusminus.tenant.util.TenantUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.persistence.EntityManager;
 import javax.servlet.http.Cookie;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -62,13 +59,12 @@ public class SyncControllerIntegrationTest {
     @Autowired
     private ObjectMapper mapper;
     @Autowired
-    private AuthenticationService authenticationService;
-    @Autowired
-    private SecurityProperties securityProperties;
-    @Autowired
     private TransactionalService transactionalService;
     @Autowired
-    private Context<AuthenticationParameters> securityContext;
+    private JwtGenerator generator;
+
+    @SpyBean
+    private SecurityContext securityContext;
 
     private TestEntity entity1;
     private TestEntity entity2;
@@ -80,43 +76,36 @@ public class SyncControllerIntegrationTest {
 
     @Before
     public void before() {
-        securityContext.set(authenticationParameters(TENANT, OTHER_DEVICE));
-        
         entity1 = readTestEntity();
         entity1.setId(null);
         entity1.setVersion(null);
         entity1.setTenant(TENANT);
-        transactionalService.inTransaction(() -> entityManager.persist(entity1));
+        persist(OTHER_DEVICE, entity1);
 
         entity2 = readTestEntity();
         entity2.setId(null);
         entity2.setVersion(null);
         entity2.setTenant(TENANT);
-        transactionalService.inTransaction(() -> entityManager.persist(entity2));
+        persist(OTHER_DEVICE, entity2);
 
         entityWithUnknownTenant = readTestEntity();
         entityWithUnknownTenant.setId(null);
         entityWithUnknownTenant.setVersion(null);
         entityWithUnknownTenant.setTenant("Unknown tenant");
-        securityContext.set(authenticationParameters("Unknown tenant", OTHER_DEVICE));
-        transactionalService.inTransaction(() -> entityManager.persist(entityWithUnknownTenant));
+        persist(OTHER_DEVICE, entityWithUnknownTenant);
 
         entityWithoutTenant = readTestEntity();
         entityWithoutTenant.setId(null);
         entityWithoutTenant.setVersion(null);
         entityWithoutTenant.setTenant("");
-        securityContext.set(authenticationParameters("", OTHER_DEVICE));
-        transactionalService.inTransaction(() -> entityManager.persist(entityWithoutTenant));
+        persist(OTHER_DEVICE, entityWithoutTenant);
 
         entitySoftlyDeleted = readTestEntity();
         entitySoftlyDeleted.setId(null);
         entitySoftlyDeleted.setVersion(null);
         entitySoftlyDeleted.setTenant(TENANT);
         entitySoftlyDeleted.setDeleted(Boolean.TRUE);
-        securityContext.set(authenticationParameters(TENANT, OTHER_DEVICE));
-        transactionalService.inTransaction(() -> entityManager.persist(entitySoftlyDeleted));
-
-        securityContext.set(null);
+        persist(OTHER_DEVICE, entitySoftlyDeleted);
     }
 
     @Test
@@ -157,10 +146,8 @@ public class SyncControllerIntegrationTest {
 
     @Test
     public void readUpdated() throws Exception {
-        securityContext.set(authenticationParameters(TENANT, OTHER_DEVICE));
         entity2.setMyField("updated");
-        transactionalService.inTransaction(() -> entity2 = entityManager.merge(entity2));
-        securityContext.set(null);
+        entity2 = merge(OTHER_DEVICE, entity2);
 
         List<Sync<TestEntity>> actions = Collections.singletonList(
                 Sync.of(entity2, SyncType.UPDATE, 6L));
@@ -178,10 +165,7 @@ public class SyncControllerIntegrationTest {
 
     @Test
     public void readDeleted() throws Exception {
-        securityContext.set(authenticationParameters(TENANT, OTHER_DEVICE));
-        transactionalService.inTransaction(() ->
-                entityManager.remove(entityManager.merge(entity2)));
-        securityContext.set(null);
+        remove(OTHER_DEVICE, entity2);
 
         String body = mvc.perform(get("/sync?types=TestEntity&offset=5")
                 .cookie(authenticationCookie()))
@@ -213,7 +197,8 @@ public class SyncControllerIntegrationTest {
                 Sync.of(entityOne, SyncType.UPDATE, null),
                 Sync.of(entityTwo, SyncType.DELETE, null),
                 Sync.of(newEntity, SyncType.CREATE, null));
-        String json = mapper.writerFor(new TypeReference<List<Sync<TestEntity>>>() {})
+        String json = mapper.writerFor(new TypeReference<List<Sync<TestEntity>>>() {
+        })
                 .writeValueAsString(items);
 
         String body = mvc.perform(post("/sync")
@@ -229,7 +214,7 @@ public class SyncControllerIntegrationTest {
         assertThat(body).isNotEmpty();
         check(body).is("/json/write-response.json");
     }
-    
+
     @Test
     public void writeWithDependencies() throws Exception {
         String json = JsonUtils.readJson("/json/write-request-with-inner-entity.json");
@@ -253,36 +238,39 @@ public class SyncControllerIntegrationTest {
     }
 
     private Cookie authenticationCookie() {
-        String token = authenticationService.generateToken(authenticationParameters(TENANT, CURRENT_DEVICE));
-        return new Cookie(securityProperties.getCookieName(), token);
+        String token = generator.generateAccessToken(security(TENANT, CURRENT_DEVICE));
+        return new Cookie("JWT-TOKEN", token);
     }
 
-    private AuthenticationParameters authenticationParameters(String tenant, String device) {
-        return AuthenticationParameters.builder()
+    private Security security(String tenant, String device) {
+        return Security.builder()
                 .username("TestUser")
-                .otherParameters(ImmutableMap.of("tenant", tenant, "device", device))
+                .others(ImmutableMap.of("tenant", tenant, "device", device))
                 .build();
-    } 
-
-    public static <T> List<T> fromJsonList(String json, Class<T[]> type) {
-        T[] array;
-        try {
-            json = JsonUtils.readJson(json);
-            array = createObjectMapper().readValue(json, type);
-        } catch (JsonProcessingException var4) {
-            throw new JsonException(var4);
-        }
-
-        return Arrays.asList(array);
     }
 
-    private static ObjectMapper createObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper.setDateFormat(new ISO8601DateFormat());
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return mapper;
+    private void persist(String device, TestEntity entity) {
+        run(entity.getTenant(), device, () -> entityManager.persist(entity));
+    }
+
+    private TestEntity merge(String device, TestEntity entity) {
+        AtomicReference<TestEntity> container = new AtomicReference<>();
+        run(entity.getTenant(), device, () -> {
+            TestEntity merged = entityManager.merge(entity);
+            container.set(merged);
+        });
+        return container.get();
+    }
+
+    private void remove(String device, TestEntity entity) {
+        run(entity.getTenant(), device, () -> entityManager.remove(entityManager.merge(entity)));
+    }
+
+    private void run(String tenant, String device, Runnable runnable) {
+        when(securityContext.get("tenant")).thenReturn(tenant);
+        when(securityContext.get("device")).thenReturn(device);
+        transactionalService.inTransaction(() ->
+                TenantUtils.runWithTenant(entityManager, tenant, runnable));
+        reset(securityContext);
     }
 }
