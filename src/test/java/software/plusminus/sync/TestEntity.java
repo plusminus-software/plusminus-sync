@@ -15,7 +15,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
-import javax.persistence.PrimaryKeyJoinColumn;
 import javax.persistence.Version;
 
 @Data
@@ -39,7 +38,6 @@ public class TestEntity implements ApiObject {
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private Boolean deleted = Boolean.FALSE;
     @OneToOne
-    @PrimaryKeyJoinColumn
     private InnerEntity innerEntity;
 
 }

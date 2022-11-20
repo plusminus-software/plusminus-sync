@@ -4,5 +4,7 @@ public enum SyncType {
     CREATE,
     UPDATE,
     PATCH,
-    DELETE
+    DELETE,
+    READ,
+    TURN_BACK
 }

@@ -24,6 +24,7 @@ import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.exception.SyncException;
 import software.plusminus.sync.service.listener.SyncListener;
+import software.plusminus.util.EntityUtils;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -96,6 +97,14 @@ public class AuditSyncService implements SyncService {
                     checkAnnotations(sync.getObject().getClass());
                     ApiObject entity = sync.getObject();
                     switch (sync.getType()) {
+                        case TURN_BACK:
+                            return sync.getObject();
+                        case READ:
+                            Object id = EntityUtils.findId(entity);
+                            if (id == null) {
+                                throw new SyncException("Can't process READ sync: id is null");
+                            }
+                            return dataService.read(entity.getClass(), id);
                         case CREATE:
                             return dataService.create(entity);
                         case UPDATE:

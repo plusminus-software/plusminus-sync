@@ -4,7 +4,7 @@
     "class": "TestEntity",
     "id": 6,
     "myField": "Some value",
-    "version": 0,
+    "version": 1,
     "tenant": "localhost",
     "innerEntity": {
       "@id": "2",
