@@ -34,8 +34,7 @@ public class ByUuidFetcher implements Fetcher {
         
         TypedQuery<T> query = buildQuery(type, uuidField.get());
         query.setParameter(uuidField.get().getName(), uuid);
-        
-        List<T> fetched = query.getResultList();
+        List<T> fetched =  query.getResultList();
         if (fetched.size() != 1) {
             return Optional.empty();
         }

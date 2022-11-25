@@ -23,11 +23,14 @@ import software.plusminus.sync.TestEntity;
 import software.plusminus.sync.TransactionalService;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
+import software.plusminus.sync.models.Product;
+import software.plusminus.sync.models.ProductOutcome;
 import software.plusminus.tenant.util.TenantUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.persistence.EntityManager;
 import javax.servlet.http.Cookie;
@@ -62,6 +65,8 @@ public class SyncControllerIntegrationTest {
     private TransactionalService transactionalService;
     @Autowired
     private JwtGenerator generator;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @SpyBean
     private SecurityContext securityContext;
@@ -231,6 +236,36 @@ public class SyncControllerIntegrationTest {
 
         assertThat(body).isNotEmpty();
         check(body).is("/json/write-response-with-dependencies.json");
+    }
+
+    @Test
+    public void turnBackExistingObjectWithInnerEntityOnCreate() throws Exception {
+        UUID uuid = UUID.randomUUID();
+        Product productIndDb = new Product();
+        productIndDb.setUuid(uuid);
+        run(TENANT, CURRENT_DEVICE, () -> entityManager.persist(productIndDb));
+        ProductOutcome productOutcomeInDb = new ProductOutcome();
+        productOutcomeInDb.setUuid(uuid);
+        productOutcomeInDb.setProduct(productIndDb);
+        run(TENANT, CURRENT_DEVICE, () -> entityManager.persist(productOutcomeInDb));
+
+        Product product = new Product();
+        product.setUuid(uuid);
+        product.setTenant(TENANT);
+
+        String json = objectMapper.writeValueAsString(
+                Collections.singletonList(Sync.of(product, SyncType.CREATE, null)));
+        String body = mvc.perform(post("/sync")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+                .cookie(authenticationCookie()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).isNotEmpty();
     }
 
     private TestEntity readTestEntity() {

@@ -21,6 +21,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static software.plusminus.check.Checks.check;
 
@@ -59,8 +60,8 @@ public class MergeSyncListenerTest {
         
         check(sync.getType()).is(SyncType.TURN_BACK);
         check(sync.getObject()).is(entity);
-        verify(byUuidFetcher).fetch(sync);
-        verify(equalsMerger).process(any(), same(sync));
+        verify(byUuidFetcher, times(2)).fetch(sync);
+        verify(equalsMerger, never()).process(any(), any());
     }
     
     @Test
@@ -75,8 +76,8 @@ public class MergeSyncListenerTest {
         
         check(sync.getType()).is(SyncType.TURN_BACK);
         check(sync.getObject()).is(entity);
-        verify(byUuidFetcher).fetch(sync);
-        verify(equalsMerger).process(any(), same(sync));
+        verify(byUuidFetcher, times(2)).fetch(sync);
+        verify(equalsMerger, never()).process(any(), any());
     }
 
     @Test
