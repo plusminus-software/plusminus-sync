@@ -4,10 +4,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import software.plusminus.data.repository.DataRepository;
+import software.plusminus.data.service.data.DataService;
 import software.plusminus.sync.InnerEntity;
 import software.plusminus.sync.TestEntity;
 import software.plusminus.sync.dto.Sync;
@@ -20,6 +22,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -31,6 +36,8 @@ public class AuditSyncServiceIntegrationTest {
     private AuditSyncService syncService;
     @Autowired
     private DataRepository dataRepository;
+    @SpyBean
+    private DataService dataService;
     
     @Test
     public void createObjectWithInnerEntity() {
@@ -46,6 +53,8 @@ public class AuditSyncServiceIntegrationTest {
         assertThat(productOutcome.getId()).isEqualTo(1L);
         assertThat(productOutcome.getProduct().getId()).isEqualTo(1L);
         assertThat(product.getId()).isEqualTo(1L);
+        verify(dataService).create(product);
+        verify(dataService).create(productOutcome);
     }
     
     @Test
@@ -58,11 +67,10 @@ public class AuditSyncServiceIntegrationTest {
         
         Product product = new Product();
         product.setId(1L);
-        product.setVersion(0L);
-        product.setEntries(productIndDb.getEntries());
         ProductOutcome productOutcome = new ProductOutcome();
         productOutcome.setId(1L);
         productOutcome.setProduct(product);
+        product.setEntries(Collections.singletonList(productOutcome));
 
         List<?> result = syncService.write(Arrays.asList(
                 Sync.of(productOutcome, SyncType.UPDATE, null),
@@ -72,6 +80,7 @@ public class AuditSyncServiceIntegrationTest {
         assertThat(productOutcome.getId()).isEqualTo(1L);
         assertThat(productOutcome.getProduct().getId()).isEqualTo(1L);
         assertThat(product.getId()).isEqualTo(1L);
+        verify(dataService, never()).update(any());
     }
     
     @Test
@@ -85,13 +94,18 @@ public class AuditSyncServiceIntegrationTest {
         Product product = new Product();
         product.setId(1L);
         product.setVersion(0L);
+        product.setName("updated name");
         product.setEntries(Collections.emptyList());
 
         List<?> result = syncService.write(Collections.singletonList(
                 Sync.of(product, SyncType.UPDATE, null)));
 
         assertThat(result).hasSize(1);
-        assertThat(product.getId()).isEqualTo(1L);
+        assertThat(result.get(0)).isOfAnyClassIn(Product.class);
+        Product resultProduct = (Product) result.get(0); 
+        assertThat(resultProduct.getId()).isEqualTo(1L);
+        assertThat(resultProduct.getVersion()).isEqualTo(1L);
+        verify(dataService).update(product);
     }
     
     @Test

@@ -1,16 +1,25 @@
 package software.plusminus.sync.service.merger;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Spy;
+import org.mockito.junit.MockitoJUnitRunner;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.sync.TestEntity;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
+import software.plusminus.sync.service.jsog.SyncJsonService;
 
 import static software.plusminus.check.Checks.check;
 
+@RunWith(MockitoJUnitRunner.class)
 public class EqualsMergerTest {
     
-    private EqualsMerger merger = new EqualsMerger();
+    @Spy
+    private SyncJsonService jsonService = new SyncJsonService();
+    @InjectMocks
+    private EqualsMerger merger;
     
     @Test
     public void mergeEqualObjectsOnCreate() {
