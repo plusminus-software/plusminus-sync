@@ -18,7 +18,8 @@ public class EqualsMerger implements Merger {
 
     @Override
     public <T extends ApiObject> boolean supports(Sync<T> sync) {
-        return sync.getType() == SyncType.CREATE || sync.getType() == SyncType.UPDATE;
+        return false;
+//        return sync.getType() == SyncType.CREATE || sync.getType() == SyncType.UPDATE;
     }
 
     @Override

@@ -55,4 +55,14 @@ public class MergeSyncListener implements SyncListener {
         T current = repository.findById(type, EntityUtils.findId(sync.getObject()));
         foundMergers.forEach(m -> m.process(current, sync));
     }
+    
+    private <T extends ApiObject> void onCreate(T object) {
+        
+    }
+    
+    private <T extends ApiObject> void onUpdate(T object) {
+        Class<T> type = (Class<T>) object.getClass();
+        T current = repository.findById(type, EntityUtils.findId(object));
+        
+    }
 }

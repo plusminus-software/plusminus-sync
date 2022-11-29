@@ -93,8 +93,7 @@ public class AuditSyncServiceIntegrationTest {
 
         Product product = new Product();
         product.setId(1L);
-        product.setVersion(0L);
-        product.setName("updated name");
+//        product.setVersion(0L);
         product.setEntries(Collections.emptyList());
 
         List<?> result = syncService.write(Collections.singletonList(
