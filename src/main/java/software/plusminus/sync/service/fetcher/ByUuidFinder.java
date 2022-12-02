@@ -3,7 +3,6 @@ package software.plusminus.sync.service.fetcher;
 import org.springframework.stereotype.Component;
 import software.plusminus.json.model.ApiObject;
 import software.plusminus.sync.annotation.Uuid;
-import software.plusminus.sync.dto.Sync;
 import software.plusminus.util.FieldUtils;
 
 import java.lang.reflect.Field;
@@ -18,19 +17,19 @@ import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
 
 @Component
-public class ByUuidFetcher implements Fetcher {
+public class ByUuidFinder implements Finder {
     
     @PersistenceContext
     private EntityManager entityManager;
     
     @Override
-    public <T extends ApiObject> Optional<T> fetch(Sync<T> sync) {
-        Class<T> type = (Class<T>) sync.getObject().getClass();
+    public <T extends ApiObject> Optional<T> find(T object) {
+        Class<T> type = (Class<T>) object.getClass();
         Optional<Field> uuidField = FieldUtils.findFirstWithAnnotation(type, Uuid.class);
         if (!uuidField.isPresent()) {
             return Optional.empty();
         }
-        Object uuid = FieldUtils.read(sync.getObject(), uuidField.get());
+        Object uuid = FieldUtils.read(object, uuidField.get());
         
         TypedQuery<T> query = buildQuery(type, uuidField.get());
         query.setParameter(uuidField.get().getName(), uuid);

@@ -10,8 +10,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import software.plusminus.data.repository.DataRepository;
 import software.plusminus.sync.EntityWithUuid;
-import software.plusminus.sync.dto.Sync;
-import software.plusminus.sync.dto.SyncType;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -21,10 +19,10 @@ import static software.plusminus.check.Checks.check;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @ActiveProfiles("test")
-public class ByUuidFetcherTest {
+public class ByUuidFinderTest {
     
     @Autowired
-    private ByUuidFetcher fetcher;
+    private ByUuidFinder finder;
     @Autowired
     private DataRepository repository;
     
@@ -48,16 +46,14 @@ public class ByUuidFetcherTest {
     
     @Test
     public void fetchEntityByUuid() {
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
-        Optional<EntityWithUuid> fetched = fetcher.fetch(sync);
+        Optional<EntityWithUuid> fetched = finder.find(entity);
         check(fetched).is(entity);
     }
     
     @Test
     public void fetchMissedUuid() {
         entity.setUuid(UUID.randomUUID());
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
-        Optional<EntityWithUuid> fetched = fetcher.fetch(sync);
+        Optional<EntityWithUuid> fetched = finder.find(entity);
         check(fetched).isEmpty();
     }
 

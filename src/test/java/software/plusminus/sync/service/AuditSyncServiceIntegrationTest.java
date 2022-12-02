@@ -12,6 +12,7 @@ import software.plusminus.data.repository.DataRepository;
 import software.plusminus.data.service.data.DataService;
 import software.plusminus.sync.InnerEntity;
 import software.plusminus.sync.TestEntity;
+import software.plusminus.sync.TransactionalService;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.models.Product;
@@ -22,9 +23,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static software.plusminus.check.Checks.check;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -36,6 +36,8 @@ public class AuditSyncServiceIntegrationTest {
     private AuditSyncService syncService;
     @Autowired
     private DataRepository dataRepository;
+    @Autowired
+    private TransactionalService transactionalService;
     @SpyBean
     private DataService dataService;
     
@@ -44,32 +46,43 @@ public class AuditSyncServiceIntegrationTest {
         Product product = new Product();
         ProductOutcome productOutcome = new ProductOutcome();
         productOutcome.setProduct(product);
+        product.setEntries(Collections.singletonList(productOutcome));
 
         List<?> result = syncService.write(Arrays.asList(
                 Sync.of(productOutcome, SyncType.CREATE, null),
                 Sync.of(product, SyncType.CREATE, null)));
         
         assertThat(result).asList().containsExactly(productOutcome, product);
-        assertThat(productOutcome.getId()).isEqualTo(1L);
-        assertThat(productOutcome.getProduct().getId()).isEqualTo(1L);
-        assertThat(product.getId()).isEqualTo(1L);
         verify(dataService).create(product);
         verify(dataService).create(productOutcome);
+        transactionalService.inTransaction(() -> {
+            check(result.get(0))
+                    .as(ProductOutcome.class)
+                    .is(dataRepository.findById(ProductOutcome.class, productOutcome.getId()));
+            check(result.get(1))
+                    .as(Product.class)
+                    .is(dataRepository.findById(Product.class, product.getId()));
+        });
     }
     
     @Test
-    public void turnBackObjectWithInnerEntityOnUpdate() {
-        Product productIndDb = new Product();
-        dataRepository.save(productIndDb);
+    public void replaceVersionIfObjectsEqualIgnoringVersionField() {
+        Product productInDb = new Product();
+        productInDb.setName("my name");
+        dataRepository.save(productInDb);
         ProductOutcome productOutcomeInDb = new ProductOutcome();
-        productOutcomeInDb.setProduct(productIndDb);
+        productOutcomeInDb.setProduct(productInDb);
         dataRepository.save(productOutcomeInDb);
+        productInDb.setEntries(Collections.singletonList(productOutcomeInDb));
         
         Product product = new Product();
-        product.setId(1L);
+        product.setName("my name");
+        product.setId(productInDb.getId());
+        product.setVersion(22L);
         ProductOutcome productOutcome = new ProductOutcome();
-        productOutcome.setId(1L);
+        productOutcome.setId(productOutcomeInDb.getId());
         productOutcome.setProduct(product);
+        productOutcome.setVersion(33L);
         product.setEntries(Collections.singletonList(productOutcome));
 
         List<?> result = syncService.write(Arrays.asList(
@@ -77,10 +90,12 @@ public class AuditSyncServiceIntegrationTest {
                 Sync.of(product, SyncType.UPDATE, null)));
         
         assertThat(result).hasSize(2);
-        assertThat(productOutcome.getId()).isEqualTo(1L);
-        assertThat(productOutcome.getProduct().getId()).isEqualTo(1L);
-        assertThat(product.getId()).isEqualTo(1L);
-        verify(dataService, never()).update(any());
+        check(result.get(0)).as(ProductOutcome.class)
+                .is(productOutcomeInDb);
+        check(((ProductOutcome) result.get(0)).getVersion()).is(0L);
+        check(result.get(1)).as(Product.class)
+                .is(productInDb);
+        check(((Product) result.get(1)).getVersion()).is(0L);
     }
     
     @Test
@@ -92,8 +107,9 @@ public class AuditSyncServiceIntegrationTest {
         dataRepository.save(productOutcomeInDb);
 
         Product product = new Product();
-        product.setId(1L);
-//        product.setVersion(0L);
+        product.setName("updated name");
+        product.setId(productIndDb.getId());
+        product.setVersion(0L);
         product.setEntries(Collections.emptyList());
 
         List<?> result = syncService.write(Collections.singletonList(
@@ -102,7 +118,7 @@ public class AuditSyncServiceIntegrationTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0)).isOfAnyClassIn(Product.class);
         Product resultProduct = (Product) result.get(0); 
-        assertThat(resultProduct.getId()).isEqualTo(1L);
+        assertThat(resultProduct.getId()).isEqualTo(productIndDb.getId());
         assertThat(resultProduct.getVersion()).isEqualTo(1L);
         verify(dataService).update(product);
     }
