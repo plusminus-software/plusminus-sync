@@ -13,15 +13,16 @@ import software.plusminus.data.repository.DataRepository;
 import software.plusminus.sync.EntityWithUuid;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
-import software.plusminus.sync.service.fetcher.ByUuidFetcher;
-import software.plusminus.sync.service.merger.EqualsMerger;
+import software.plusminus.sync.service.fetcher.ByUuidFinder;
+import software.plusminus.sync.service.merger.VersionMerger;
 
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static software.plusminus.check.Checks.check;
 
@@ -35,9 +36,9 @@ public class MergeSyncListenerTest {
     @Autowired
     private DataRepository repository;
     @SpyBean
-    private ByUuidFetcher byUuidFetcher;
+    private ByUuidFinder finder;
     @SpyBean
-    private EqualsMerger equalsMerger;
+    private VersionMerger merger;
     
     private EntityWithUuid entity;
 
@@ -53,43 +54,78 @@ public class MergeSyncListenerTest {
     }
 
     @Test
-    public void equalsEntityOnCreate() {
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
-        
-        mergeSyncListener.onWrite(sync);
-        
-        check(sync.getType()).is(SyncType.TURN_BACK);
-        check(sync.getObject()).is(entity);
-        verify(byUuidFetcher, times(2)).fetch(sync);
-        verify(equalsMerger, never()).process(any(), any());
-    }
-    
-    @Test
-    public void equalsEntityOnCreateWithNullIdAndVersion() {
-        EntityWithUuid toSync = createEntity();
-        toSync.setUuid(entity.getUuid());
-        toSync.setId(null);
-        toSync.setVersion(null);
-        Sync<EntityWithUuid> sync = Sync.of(toSync, SyncType.CREATE, null);
-        
-        mergeSyncListener.onWrite(sync);
-        
-        check(sync.getType()).is(SyncType.TURN_BACK);
-        check(sync.getObject()).is(entity);
-        verify(byUuidFetcher, times(2)).fetch(sync);
-        verify(equalsMerger, never()).process(any(), any());
-    }
-
-    @Test
-    public void equalsEntityOnUpdate() {
+    public void doNotProcessIfNoSupportedMergers() {
+        doReturn(false).when(merger).supports(any());
         Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null);
         
         mergeSyncListener.onWrite(sync);
         
-        check(sync.getType()).is(SyncType.TURN_BACK);
-        check(sync.getObject()).is(entity);
-        verify(byUuidFetcher, never()).fetch(sync);
-        verify(equalsMerger).process(any(), same(sync));
+        verify(merger, never()).process(any(), any());
+    }
+    
+    @Test
+    public void doNotProcessIfNoFoundEntityOnCreate() {
+        entity.setUuid(UUID.randomUUID());
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
+        
+        mergeSyncListener.onWrite(sync);
+        
+        verify(merger, never()).process(any(), any());
+    }
+    
+    @Test
+    public void doNotProcessIfNoFoundEntityOnUpdate() {
+        entity.setId(321L);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null);
+        
+        mergeSyncListener.onWrite(sync);
+        
+        verify(merger, never()).process(any(), any());
+    }
+    
+    @Test
+    public void processIfThereAreSupportedMergers() {
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null);
+        mergeSyncListener.onWrite(sync);
+        verify(merger).process(eq(entity), same(sync));
+    }
+    
+    @Test
+    public void createIsChangedToUpdateIfFound() {
+        Long id = entity.getId();
+        entity.setId(null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
+        
+        mergeSyncListener.onWrite(sync);
+        
+        check(sync.getType()).is(SyncType.UPDATE);
+        check(sync.getObject().getId()).is(id);
+    }
+    
+    @Test
+    public void versionIsSetToZeroIfCreateIsChangedToUpdate() {
+        entity.setId(null);
+        entity.setVersion(null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
+        
+        mergeSyncListener.onWrite(sync);
+        
+        check(sync.getType()).is(SyncType.UPDATE);
+        check(sync.getObject().getVersion()).is(0L);
+    }
+    
+    @Test
+    public void finderIsUsedOnCreateSync() {
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
+        mergeSyncListener.onWrite(sync);
+        verify(finder).find(entity);
+    }
+    
+    @Test
+    public void finderIsNotUsedOnUpdateSync() {
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null);
+        mergeSyncListener.onWrite(sync);
+        verify(finder, never()).find(any());
     }
     
     private EntityWithUuid createEntity() {

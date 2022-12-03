@@ -7,11 +7,15 @@ import software.plusminus.data.repository.DataRepository;
 import software.plusminus.json.model.ApiObject;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
-import software.plusminus.sync.service.fetcher.Fetcher;
+import software.plusminus.sync.exception.SyncException;
+import software.plusminus.sync.service.fetcher.Finder;
 import software.plusminus.sync.service.fetcher.SyncTransactionService;
 import software.plusminus.sync.service.merger.Merger;
+import software.plusminus.sync.service.version.SyncVersionService;
 import software.plusminus.util.EntityUtils;
+import software.plusminus.util.FieldUtils;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,9 +27,11 @@ public class MergeSyncListener implements SyncListener {
     @Autowired
     private List<Merger> mergers;
     @Autowired
-    private List<Fetcher> fetchers;
+    private List<Finder> finders;
     @Autowired
     private SyncTransactionService transactionService;
+    @Autowired
+    private SyncVersionService versionService;
     @Autowired
     private DataRepository repository;
 
@@ -38,21 +44,74 @@ public class MergeSyncListener implements SyncListener {
             return;
         }
 
-        if (sync.getType() == SyncType.CREATE) {
-            for (Fetcher fetcher : fetchers) {
-                Optional<T> fetched = transactionService.newTransaction(() -> fetcher.fetch(sync));
-                if (fetched.isPresent()) {
-                    T object = fetcher.fetch(sync)
-                            .orElseThrow(() -> new IllegalStateException("Entity is not available to fetch"));
-                    sync.setObject(object);
-                    sync.setType(SyncType.TURN_BACK);
-                    return;
-                }
-            }
+        Optional<T> current = findCurrent(sync);
+        if (!current.isPresent()) {
             return;
         }
-        Class<T> type = (Class<T>) sync.getObject().getClass();
-        T current = repository.findById(type, EntityUtils.findId(sync.getObject()));
-        foundMergers.forEach(m -> m.process(current, sync));
+        foundMergers.forEach(m -> m.process(current.get(), sync));
+    }
+
+    private <T extends ApiObject> Optional<T> findCurrent(Sync<T> sync) {
+        if (sync.getType() == SyncType.CREATE) {
+            return findOnCreate(sync);
+        } else if (sync.getType() == SyncType.UPDATE) {
+            return findById(sync.getObject());
+        }
+        return Optional.empty();
+    }
+    
+    private <T extends ApiObject> Optional<T> findOnCreate(Sync<T> sync) {
+        return finders.stream()
+                .map(f -> transactionService.newTransaction(() -> f.find(sync.getObject())))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(current -> {
+                    Optional<T> byId = findById(current);
+                    if (!byId.isPresent()) {
+                        throw new SyncException("Entity must be present");
+                    }
+                    return byId.get();
+                })
+                .peek(current -> {
+                    populateId(current, sync.getObject());
+                    populateZeroVersionIfNeeded(current, sync.getObject());
+                    sync.setType(SyncType.UPDATE);
+                })
+                .findFirst();
+    }
+    
+    private <T extends ApiObject> Optional<T> findById(T object) {
+        Class<T> type = (Class<T>) object.getClass();
+        Object id = EntityUtils.findId(object);
+        if (id == null) {
+            throw new SyncException("Id must not be null on UPDATE sync");
+        }
+        T current = repository.findById(type, id);
+        return Optional.ofNullable(current);
+    }
+
+    private <T extends ApiObject> void populateId(T source, T target) {
+        Field idField = EntityUtils.findIdField(source.getClass())
+                .orElseThrow(() -> new SyncException("Class " + source.getClass() + " should contain @Id field"));
+        Object id = FieldUtils.read(source, idField);
+        if (id == null) {
+            throw new SyncException("Id can not be null for the existing entity");
+        }
+        FieldUtils.write(target, id, idField);
+    }
+    
+    private <T extends ApiObject> void populateZeroVersionIfNeeded(T source, T target) {
+        Optional<Field> field = versionService.findVersionField(source);
+        if (!field.isPresent()) {
+            return;
+        }
+        Object sourceVersion = FieldUtils.read(source, field.get());
+        if (!(sourceVersion instanceof Number)) {
+            return;
+        }
+        
+        if (((Number) sourceVersion).longValue() == 0) {
+            FieldUtils.write(target, sourceVersion, field.get());
+        }
     }
 }

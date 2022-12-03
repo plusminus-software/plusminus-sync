@@ -10,20 +10,17 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Version;
 
 @Data
 @Syncable
 @Entity
-public class EntityWithUuid implements ApiObject {
+public class EntityWithoutVersion implements ApiObject {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Uuid
     private UUID uuid;
-    @Version
-    private Long version;
     private String myField;
     
 }
