@@ -16,17 +16,17 @@ import software.plusminus.sync.service.version.SyncVersionService;
 import static software.plusminus.check.Checks.check;
 
 @RunWith(MockitoJUnitRunner.class)
-public class EqualsIgnoringVersionMergerTest {
+public class VersionMergerTest {
     
     @Spy
     private SyncJsonService jsonService = new SyncJsonService();
     @Spy
     private SyncVersionService versionService = new SyncVersionService();
     @InjectMocks
-    private EqualsIgnoringVersionMerger merger;
+    private VersionMerger merger;
     
     @Test
-    public void doesNotSupportEntitiesWithoutVersionField() {
+    public void notSupportsEntitiesWithoutVersionField() {
         EntityWithoutVersion entity = new EntityWithoutVersion();
         entity.setId(10L);
         entity.setMyField("someText");
@@ -48,21 +48,11 @@ public class EqualsIgnoringVersionMergerTest {
     }
     
     @Test
-    public void mergeFullyEqualObjects() {
-        TestEntity current = readTestEntity();
-        TestEntity inSync = readTestEntity();
-        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
-        
-        merger.process(current, sync);
-        
-        check(sync.getObject()).isSame(inSync);
-    }
-    
-    @Test
     public void mergeEqualObjectsIgnoringVersionField() {
         TestEntity current = readTestEntity();
         current.setVersion(10L);
         TestEntity inSync = readTestEntity();
+        inSync.setVersion(5L);
         Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
         
         merger.process(current, sync);
@@ -76,6 +66,7 @@ public class EqualsIgnoringVersionMergerTest {
         TestEntity current = readTestEntity();
         current.setVersion(10L);
         TestEntity inSync = readTestEntity();
+        inSync.setVersion(5L);
         inSync.setMyField("different");
         Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
         
@@ -84,7 +75,24 @@ public class EqualsIgnoringVersionMergerTest {
         check(sync.getType()).is(SyncType.UPDATE);
         check(sync.getObject()).isSame(inSync);
         check(current.getVersion()).is(10L);
-        check(sync.getObject().getVersion()).is(0L);
+        check(sync.getObject().getVersion()).is(5L);
+    }
+
+    @Test
+    public void notMergeObjectsWithEqualsVersions() {
+        TestEntity current = readTestEntity();
+        current.setMyField("current value");
+        current.setVersion(3L);
+        TestEntity inSync = readTestEntity();
+        inSync.setMyField("value to update");
+        inSync.setVersion(3L);
+        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
+
+        merger.process(current, sync);
+
+        check(sync.getObject()).isSame(inSync);
+        check(sync.getObject().getVersion()).is(3L);
+        check(sync.getObject().getMyField()).is("value to update");
     }
 
     private TestEntity readTestEntity() {

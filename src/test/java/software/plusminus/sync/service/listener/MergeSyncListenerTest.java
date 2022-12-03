@@ -14,7 +14,7 @@ import software.plusminus.sync.EntityWithUuid;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.service.fetcher.ByUuidFinder;
-import software.plusminus.sync.service.merger.EqualsIgnoringVersionMerger;
+import software.plusminus.sync.service.merger.VersionMerger;
 
 import java.util.UUID;
 
@@ -38,7 +38,7 @@ public class MergeSyncListenerTest {
     @SpyBean
     private ByUuidFinder finder;
     @SpyBean
-    private EqualsIgnoringVersionMerger merger;
+    private VersionMerger merger;
     
     private EntityWithUuid entity;
 

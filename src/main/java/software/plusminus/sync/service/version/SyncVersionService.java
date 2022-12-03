@@ -12,22 +12,17 @@ import java.util.stream.Stream;
 public class SyncVersionService {
 
     @SuppressWarnings("squid:S1872")
-    public <T> Optional<Field> findVersionField(T source) {
-        return FieldUtils.findFirst(source.getClass(), f -> Stream.of(f.getAnnotations())
+    public Optional<Field> findVersionField(Object object) {
+        return FieldUtils.findFirst(object.getClass(), f -> Stream.of(f.getAnnotations())
                 .anyMatch(annotation -> annotation.annotationType().getSimpleName().equals("Version")));
     }
-
-    public <T> void populateVersion(T source, T target) {
-        Optional<Field> versionField = findVersionField(source);
+    
+    public Field findVersionFieldOrException(Object object) {
+        Optional<Field> versionField = findVersionField(object);
         if (!versionField.isPresent()) {
-            throw new SyncException("@Version field is missed in " + source.getClass() + " class");
+            throw new SyncException("@Version field is missed in " + object.getClass() + " class");
         }
-        Object sourceVersion = FieldUtils.read(source, versionField.get());
-        if (!(sourceVersion instanceof Number)) {
-            return;
-        }
-
-        FieldUtils.write(target, sourceVersion, versionField.get());
+        return versionField.get();
     }
 
 }

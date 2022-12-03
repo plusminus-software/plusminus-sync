@@ -3,18 +3,20 @@ package software.plusminus.sync.service.merger;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import software.plusminus.json.model.ApiObject;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.service.jsog.SyncJsonService;
 import software.plusminus.sync.service.version.SyncVersionService;
+import software.plusminus.util.FieldUtils;
 
 import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.function.Predicate;
 
 @Component
-public class EqualsIgnoringVersionMerger implements Merger {
+public class VersionMerger implements Merger {
 
     @Autowired
     private SyncJsonService jsonService;
@@ -33,22 +35,20 @@ public class EqualsIgnoringVersionMerger implements Merger {
 
     @Override
     public <T extends ApiObject> void process(T current, Sync<T> sync) {
-        if (areFullyEquals(current, sync)) {
+        Field versionField = versionService.findVersionFieldOrException(current);
+        Object currentVersion = FieldUtils.read(current, versionField);
+        Object syncVersion = FieldUtils.read(sync.getObject(), versionField);
+        if (ObjectUtils.nullSafeEquals(currentVersion, syncVersion)) {
             return;
         }
+        
         Predicate<PropertyWriter> ignoreVersionFieldFilter = ignoreVersionFieldFilter();
         String currentJsog = jsonService.toJson(current, ignoreVersionFieldFilter);
         String syncObjectJsog = jsonService.toJson(sync.getObject(), ignoreVersionFieldFilter);
         boolean areEqualsIgnoringVersion = currentJsog.equals(syncObjectJsog);
         if (areEqualsIgnoringVersion) {
-            versionService.populateVersion(current, sync.getObject());
+            FieldUtils.write(sync.getObject(), currentVersion, versionField);
         }
-    }
-
-    private <T extends ApiObject> boolean areFullyEquals(T current, Sync<T> sync) {
-        String currentJsog = jsonService.toJson(current, p -> true);
-        String syncObjectJsog = jsonService.toJson(sync.getObject(), p -> true);
-        return currentJsog.equals(syncObjectJsog);
     }
 
     private Predicate<PropertyWriter> ignoreVersionFieldFilter() {
