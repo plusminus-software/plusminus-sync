@@ -10,6 +10,7 @@ import software.plusminus.json.model.ApiObject;
 import software.plusminus.sync.annotation.Syncable;
 import software.plusminus.tenant.annotation.Tenant;
 
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -39,5 +40,7 @@ public class TestEntity implements ApiObject {
     private Boolean deleted = Boolean.FALSE;
     @OneToOne
     private InnerEntity innerEntity;
+    @Embedded
+    private EmbeddedObject embeddedObject;
 
 }

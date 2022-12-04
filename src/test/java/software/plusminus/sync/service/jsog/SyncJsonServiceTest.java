@@ -11,21 +11,21 @@ public class SyncJsonServiceTest {
     @Test
     public void withoutFiltering() {
         MyObject object = getObject();
-        String json = jsonService.toJson(object, w -> true);
+        String json = jsonService.toJson(object, (o, w) -> true);
         assertEquals("{\"myString\":\"stringValue\",\"myInteger\":10,\"myBoolean\":true}", json);
     }
 
     @Test
     public void filteredByFieldName() {
         MyObject object = getObject();
-        String json = jsonService.toJson(object, w -> !w.getName().equals("myString"));
+        String json = jsonService.toJson(object, (o, w) -> !w.getName().equals("myString"));
         assertEquals("{\"myInteger\":10,\"myBoolean\":true}", json);
     }
 
     @Test
     public void filteredByAnnotation() {
         MyObject object = getObject();
-        String json = jsonService.toJson(object, w -> w.getAnnotation(Deprecated.class) == null);
+        String json = jsonService.toJson(object, (o, w) -> w.getAnnotation(Deprecated.class) == null);
         assertEquals("{\"myString\":\"stringValue\",\"myInteger\":10}", json);
     }
     

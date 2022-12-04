@@ -5,15 +5,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 import software.plusminus.json.model.ApiObject;
+import software.plusminus.json.model.Classable;
+import software.plusminus.sync.annotation.Uuid;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.service.jsog.SyncJsonService;
 import software.plusminus.sync.service.version.SyncVersionService;
+import software.plusminus.util.AnnotationUtils;
 import software.plusminus.util.FieldUtils;
 
 import java.lang.reflect.Field;
 import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
+import javax.persistence.EmbeddedId;
+import javax.persistence.IdClass;
 
 @Component
 public class VersionMerger implements Merger {
@@ -42,18 +47,44 @@ public class VersionMerger implements Merger {
             return;
         }
         
-        Predicate<PropertyWriter> ignoreVersionFieldFilter = ignoreVersionFieldFilter();
-        String currentJsog = jsonService.toJson(current, ignoreVersionFieldFilter);
-        String syncObjectJsog = jsonService.toJson(sync.getObject(), ignoreVersionFieldFilter);
+        String currentJsog = jsonService.toJson(current, fieldFilter(current));
+        String syncObjectJsog = jsonService.toJson(sync.getObject(), fieldFilter(sync.getObject()));
         boolean areEqualsIgnoringVersion = currentJsog.equals(syncObjectJsog);
         if (areEqualsIgnoringVersion) {
             FieldUtils.write(sync.getObject(), currentVersion, versionField);
         }
     }
 
-    private Predicate<PropertyWriter> ignoreVersionFieldFilter() {
-        return writer -> writer.getAnnotation(javax.persistence.Version.class) == null
-                && writer.getAnnotation(org.springframework.data.annotation.Version.class) == null;
+    private BiPredicate<Object, PropertyWriter> fieldFilter(Object rootEntity) {
+        return (pojo, writer) -> {
+            if (pojo != rootEntity) {
+                if (AnnotationUtils.findAnnotation("Entity", pojo) == null) {
+                    return true;
+                }
+                return isIdField(writer) || isClassField(writer) || isUuidField(writer);
+            }
+            return !isVersionField(writer);
+        };
+    }
+    
+    private boolean isVersionField(PropertyWriter writer) {
+        return writer.getAnnotation(javax.persistence.Version.class) != null
+                || writer.getAnnotation(org.springframework.data.annotation.Version.class) != null;
+    }
+    
+    private boolean isIdField(PropertyWriter writer) {
+        return writer.getAnnotation(javax.persistence.Id.class) != null
+                || writer.getAnnotation(org.springframework.data.annotation.Id.class) != null
+                || writer.getAnnotation(IdClass.class) != null
+                || writer.getAnnotation(EmbeddedId.class) != null;
+    }
+    
+    private boolean isClassField(PropertyWriter writer) {
+        return writer.getMember().getMember().getDeclaringClass() == Classable.class;
+    }
+    
+    private boolean isUuidField(PropertyWriter writer) {
+        return writer.getAnnotation(Uuid.class) != null;
     }
 
 }

@@ -1,9 +1,10 @@
 package software.plusminus.sync.service.jsog;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
@@ -12,13 +13,13 @@ import org.springframework.stereotype.Service;
 import software.plusminus.check.exception.JsonException;
 import software.plusminus.util.ObjectUtils;
 
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
 @Service
 public class SyncJsonService {
 
-    public String toJson(Object object, Predicate<PropertyWriter> filter) {
+    public String toJson(Object object, BiPredicate<Object, PropertyWriter> filter) {
         ObjectMapper mapper = new ObjectMapper();
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("DynamicFilter", new DynamicFilter(filter));
@@ -39,20 +40,20 @@ public class SyncJsonService {
 
     private static final class DynamicFilter extends SimpleBeanPropertyFilter {
 
-        private Predicate<PropertyWriter> filter;
+        private BiPredicate<Object, PropertyWriter> filter;
 
-        private DynamicFilter(Predicate<PropertyWriter> filter) {
+        private DynamicFilter(BiPredicate<Object, PropertyWriter> filter) {
             this.filter = filter;
         }
 
         @Override
-        protected boolean include(BeanPropertyWriter writer) {
-            return include((PropertyWriter) writer);
-        }
-
-        @Override
-        protected boolean include(PropertyWriter writer) {
-            return filter.test(writer);
+        public void serializeAsField(Object pojo,
+                                     JsonGenerator jgen,
+                                     SerializerProvider provider,
+                                     PropertyWriter writer) throws Exception {
+            if (filter.test(pojo, writer)) {
+                super.serializeAsField(pojo, jgen, provider, writer);
+            }
         }
     }
 
