@@ -2,6 +2,7 @@ package software.plusminus.sync.service.merger;
 
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 import software.plusminus.json.model.ApiObject;
@@ -63,13 +64,17 @@ public class VersionMerger implements Merger {
                 }
                 return isIdField(writer) || isClassField(writer) || isUuidField(writer);
             }
-            return !isVersionField(writer);
+            return !isVersionField(writer) && !isModifiedTimeField(writer);
         };
     }
     
     private boolean isVersionField(PropertyWriter writer) {
         return writer.getAnnotation(javax.persistence.Version.class) != null
                 || writer.getAnnotation(org.springframework.data.annotation.Version.class) != null;
+    }
+
+    private boolean isModifiedTimeField(PropertyWriter writer) {
+        return writer.getAnnotation(LastModifiedDate.class) != null;
     }
     
     private boolean isIdField(PropertyWriter writer) {
