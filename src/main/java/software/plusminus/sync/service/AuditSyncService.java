@@ -24,9 +24,11 @@ import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.exception.SyncException;
 import software.plusminus.sync.service.listener.SyncListener;
+import software.plusminus.sync.service.listener.SyncPostListener;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -47,6 +49,8 @@ public class AuditSyncService implements SyncService {
     private DeviceContext deviceContext;
     @Autowired
     private List<SyncListener> listeners;
+    @Autowired(required = false)
+    private List<SyncPostListener> postListeners = Collections.emptyList();
 
     @Override
     public List<Sync<? extends ApiObject>> read(List<String> types, boolean excludeCurrentDevice,
@@ -110,6 +114,7 @@ public class AuditSyncService implements SyncService {
                     }
                 })
                 .filter(Objects::nonNull)
+                .peek(entity -> postListeners.forEach(l -> l.afterWrite(entity)))
                 .collect(Collectors.toList());
     }
 
@@ -150,7 +155,7 @@ public class AuditSyncService implements SyncService {
         }
     }
 
-    private Deleted toDeleted(AuditLog auditLog) {
+    private Deleted toDeleted(AuditLog<?> auditLog) {
         Class<?> type;
         try {
             type = Class.forName(auditLog.getEntityType());
