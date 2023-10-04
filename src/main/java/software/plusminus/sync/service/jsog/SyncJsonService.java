@@ -9,8 +9,8 @@ import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import org.springframework.boot.json.JsonParseException;
 import org.springframework.stereotype.Service;
-import software.plusminus.check.exception.JsonException;
 import software.plusminus.util.ObjectUtils;
 
 import java.util.function.BiPredicate;
@@ -29,7 +29,7 @@ public class SyncJsonService {
         try {
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
-            throw new JsonException(e);
+            throw new JsonParseException(e);
         }
     }
     
