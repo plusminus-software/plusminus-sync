@@ -1,5 +1,9 @@
 package software.plusminus.sync.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -8,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.plusminus.audit.annotation.Auditable;
@@ -25,6 +30,7 @@ import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.exception.SyncException;
 import software.plusminus.sync.service.listener.SyncListener;
 import software.plusminus.sync.service.listener.SyncPostListener;
+import software.plusminus.tenant.context.TenantContext;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -34,9 +40,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.persistence.Entity;
 
+import static javax.management.timer.Timer.ONE_MINUTE;
+
 @Service
 @ConditionalOnBean(AuditLogService.class)
-@SuppressWarnings("squid:S3864")
+@SuppressWarnings({"squid:S3864", "checkstyle:ClassFanOutComplexity"})
 public class AuditSyncService implements SyncService {
 
     @Autowired
@@ -44,18 +52,58 @@ public class AuditSyncService implements SyncService {
     @Autowired
     private DataService dataService;
     @Autowired
+    private SyncTransactionService transactionService;
+    @Autowired
     private AuditLogRepository auditLogRepository;
     @Autowired
     private DeviceContext deviceContext;
     @Autowired
+    private TenantContext tenantContext;
+    @Autowired
     private List<SyncListener> listeners;
+    @Autowired
+    private ObjectMapper objectMapper;
     @Autowired(required = false)
     private List<SyncPostListener> postListeners = Collections.emptyList();
+    private final Cache<Long, AuditLog<? extends ApiObject>> cache = Caffeine.newBuilder()
+            .maximumSize(1_000)
+            .build();
+
+    @Scheduled(fixedDelay = ONE_MINUTE)
+    public void refresh() {
+        try {
+            tenantContext.disable();
+            transactionService.run(() -> {
+                if (cache.asMap().isEmpty()) {
+                    Page<AuditLog<? extends ApiObject>> page = auditLogRepository.findByCurrentTrue(
+                            PageRequest.of(0, 1_000, Sort.Direction.DESC, "number"));
+                    page.forEach(auditLog -> {
+                        fetchEntity(auditLog);
+                        cache.put(auditLog.getNumber(), auditLog);
+                    });
+                    return;
+                }
+                List<AuditLog<?>> cachedAuditLogs = new ArrayList<>(cache.asMap().values());
+                cachedAuditLogs.forEach(cachedAuditLog -> {
+                    AuditLog<? extends ApiObject> current =
+                            auditLogRepository.findByEntityTypeAndEntityIdAndCurrentTrue(cachedAuditLog.getEntityType(),
+                                    cachedAuditLog.getEntityId());
+                    if (!Objects.equals(current.getNumber(), cachedAuditLog.getNumber())) {
+                        fetchEntity(current);
+                        cache.invalidate(cachedAuditLog.getNumber());
+                        cache.put(current.getNumber(), current);
+                    }
+                });
+            });
+        } finally {
+            tenantContext.enable();
+        }
+    }
 
     @Override
     public List<Sync<? extends ApiObject>> read(List<String> types, boolean excludeCurrentDevice,
-                           Long offset, Integer size,
-                           Sort.Direction direction) {
+                                                Long offset, Integer size,
+                                                Sort.Direction direction) {
 
         types = types.stream()
                 .map(entityService::findClass)
@@ -68,12 +116,11 @@ public class AuditSyncService implements SyncService {
         if (excludeCurrentDevice) {
             String ignoreDevice = deviceContext.currentDevice();
             page = auditLogRepository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
-                    types, ignoreDevice, offset, pageable); 
+                    types, ignoreDevice, offset, pageable);
         } else {
             page = auditLogRepository.findByEntityTypeInAndNumberGreaterThanAndCurrentTrue(
                     types, offset, pageable);
         }
-                
 
         return page.getContent().stream()
                 .map(this::toSync)
@@ -119,6 +166,12 @@ public class AuditSyncService implements SyncService {
     }
 
     private Sync<? extends ApiObject> toSync(AuditLog<? extends ApiObject> auditLog) {
+        AuditLog<? extends ApiObject> cached = cache.getIfPresent(auditLog.getNumber());
+        if (cached == null) {
+            cache.put(auditLog.getNumber(), auditLog);
+        } else {
+            auditLog = cached;
+        }
         ApiObject object;
         switch (auditLog.getAction()) {
             case CREATE:
@@ -163,5 +216,14 @@ public class AuditSyncService implements SyncService {
             throw new SyncException("Unknown type: " + auditLog.getEntityType(), e);
         }
         return Deleted.of(type.getSimpleName(), auditLog.getEntityId());
+    }
+
+    private void fetchEntity(AuditLog<? extends ApiObject> auditLog) {
+        try {
+            objectMapper.writeValueAsString(auditLog.getEntity());
+        } catch (JsonProcessingException e) {
+            throw new SyncException("Exception during cache update of AuditLog #"
+                    + auditLog.getNumber());
+        }
     }
 }
