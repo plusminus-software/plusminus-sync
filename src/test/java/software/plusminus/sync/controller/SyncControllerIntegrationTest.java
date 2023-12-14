@@ -5,17 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import software.plusminus.check.util.JsonUtils;
+import software.plusminus.jwt.service.IssuerService;
 import software.plusminus.jwt.service.JwtGenerator;
 import software.plusminus.security.Security;
 import software.plusminus.security.context.SecurityContext;
@@ -26,6 +23,7 @@ import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.models.Product;
 import software.plusminus.sync.models.ProductOutcome;
 import software.plusminus.tenant.util.TenantUtils;
+import software.plusminus.test.IntegrationTest;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,6 +34,8 @@ import javax.persistence.EntityManager;
 import javax.servlet.http.Cookie;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -44,12 +44,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static software.plusminus.check.Checks.check;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ActiveProfiles("test")
-public class SyncControllerIntegrationTest {
+public class SyncControllerIntegrationTest extends IntegrationTest {
 
     private static final String TENANT = "localhost";
     private static final String CURRENT_DEVICE = "CurrentDevice";
@@ -70,6 +67,8 @@ public class SyncControllerIntegrationTest {
 
     @SpyBean
     private SecurityContext securityContext;
+    @SpyBean
+    private IssuerService issuerService;
 
     private TestEntity entity1;
     private TestEntity entity2;
@@ -273,7 +272,11 @@ public class SyncControllerIntegrationTest {
     }
 
     private Cookie authenticationCookie() {
+        doReturn("localhost")
+                .when(issuerService).currentIssuer();
         String token = generator.generateAccessToken(security(TENANT, CURRENT_DEVICE));
+        doCallRealMethod()
+                .when(issuerService).currentIssuer();
         return new Cookie("JWT-TOKEN", token);
     }
 

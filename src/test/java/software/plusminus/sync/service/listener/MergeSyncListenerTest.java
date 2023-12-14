@@ -3,18 +3,15 @@ package software.plusminus.sync.service.listener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 import software.plusminus.data.repository.DataRepository;
 import software.plusminus.sync.EntityWithUuid;
 import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.service.fetcher.ByUuidFinder;
 import software.plusminus.sync.service.merger.VersionMerger;
+import software.plusminus.test.IntegrationTest;
 
 import java.util.UUID;
 
@@ -26,10 +23,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static software.plusminus.check.Checks.check;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-@ActiveProfiles("test")
-public class MergeSyncListenerTest {
+public class MergeSyncListenerTest extends IntegrationTest {
     
     @Autowired
     private MergeSyncListener mergeSyncListener;

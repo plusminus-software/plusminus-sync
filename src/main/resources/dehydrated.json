@@ -1,0 +1,72 @@
+[
+  {
+    "@id": "1",
+    "object": {
+      "@id": "2",
+      "class": "A",
+      "id": 1,
+      "uuid": "%s",
+      "tenant": "localhost",
+      "version": 1,
+      "name": "a",
+      "bs": [
+        {
+          ":dehydrated": true,
+          "class": "B",
+          "id": 1,
+          "uuid": "%s"
+        }
+      ],
+      "entityC": {
+        ":dehydrated": true,
+        "class": "C",
+        "id": 1,
+        "uuid": "%s"
+      }
+    },
+    "type": "CREATE",
+    "index": 1
+  },
+  {
+    "@id": "3",
+    "object": {
+      "@id": "4",
+      "class": "B",
+      "id": 1,
+      "uuid": "%s",
+      "tenant": "localhost",
+      "version": 0,
+      "name": "b",
+      "entityA": {
+        ":dehydrated": true,
+        "class": "A",
+        "id": 1,
+        "uuid": "%s"
+      }
+    },
+    "type": "CREATE",
+    "index": 2
+  },
+  {
+    "@id": "5",
+    "object": {
+      "@id": "6",
+      "class": "C",
+      "id": 1,
+      "uuid": "%s",
+      "tenant": "localhost",
+      "version": 0,
+      "name": "c",
+      "as": [
+        {
+          ":dehydrated": true,
+          "class": "A",
+          "id": 1,
+          "uuid": "%s"
+        }
+      ]
+    },
+    "type": "CREATE",
+    "index": 3
+  }
+]

@@ -3,23 +3,17 @@ package software.plusminus.sync.service.fetcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 import software.plusminus.data.repository.DataRepository;
 import software.plusminus.sync.EntityWithUuid;
+import software.plusminus.test.IntegrationTest;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static software.plusminus.check.Checks.check;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-@ActiveProfiles("test")
-public class ByUuidFinderTest {
+public class ByUuidFinderTest extends IntegrationTest {
     
     @Autowired
     private ByUuidFinder finder;

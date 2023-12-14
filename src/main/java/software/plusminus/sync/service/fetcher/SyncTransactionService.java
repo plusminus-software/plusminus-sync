@@ -17,5 +17,10 @@ public class SyncTransactionService {
             throw new IllegalStateException(e);
         }
     }
+
+    @Transactional
+    public void run(Runnable runnable) {
+        runnable.run();
+    }
     
 }

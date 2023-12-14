@@ -1,13 +1,9 @@
 package software.plusminus.sync.service;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 import software.plusminus.data.repository.DataRepository;
 import software.plusminus.data.service.data.DataService;
 import software.plusminus.sync.InnerEntity;
@@ -17,6 +13,7 @@ import software.plusminus.sync.dto.Sync;
 import software.plusminus.sync.dto.SyncType;
 import software.plusminus.sync.models.Product;
 import software.plusminus.sync.models.ProductOutcome;
+import software.plusminus.test.IntegrationTest;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,11 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static software.plusminus.check.Checks.check;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ActiveProfiles("test")
-public class AuditSyncServiceIntegrationTest {
+public class AuditSyncServiceIntegrationTest extends IntegrationTest {
 
     @Autowired
     private AuditSyncService syncService;

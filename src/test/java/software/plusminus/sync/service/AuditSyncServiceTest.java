@@ -1,5 +1,6 @@
 package software.plusminus.sync.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -50,7 +51,9 @@ public class AuditSyncServiceTest {
     @Mock
     private EntityService entityService;
     @Spy
-    private List<SyncListener> listeners = new ArrayList<>(); 
+    private List<SyncListener> listeners = new ArrayList<>();
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
     @Mock
     private AuditLogRepository auditLogRepository;
 
