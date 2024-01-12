@@ -43,8 +43,8 @@ public class AuditSyncServiceIntegrationTest extends IntegrationTest {
         product.setEntries(Collections.singletonList(productOutcome));
 
         List<?> result = syncService.write(Arrays.asList(
-                Sync.of(productOutcome, SyncType.CREATE, null),
-                Sync.of(product, SyncType.CREATE, null)));
+                Sync.of(productOutcome, SyncType.CREATE, null, null),
+                Sync.of(product, SyncType.CREATE, null, null)));
         
         assertThat(result).asList().containsExactly(productOutcome, product);
         verify(dataService).create(product);
@@ -80,8 +80,8 @@ public class AuditSyncServiceIntegrationTest extends IntegrationTest {
         product.setEntries(Collections.singletonList(productOutcome));
 
         List<?> result = syncService.write(Arrays.asList(
-                Sync.of(productOutcome, SyncType.UPDATE, null),
-                Sync.of(product, SyncType.UPDATE, null)));
+                Sync.of(productOutcome, SyncType.UPDATE, null, null),
+                Sync.of(product, SyncType.UPDATE, null, null)));
         
         assertThat(result).hasSize(2);
         check(result.get(0)).as(ProductOutcome.class)
@@ -107,7 +107,7 @@ public class AuditSyncServiceIntegrationTest extends IntegrationTest {
         product.setEntries(Collections.emptyList());
 
         List<?> result = syncService.write(Collections.singletonList(
-                Sync.of(product, SyncType.UPDATE, null)));
+                Sync.of(product, SyncType.UPDATE, null, null)));
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0)).isOfAnyClassIn(Product.class);
@@ -129,8 +129,8 @@ public class AuditSyncServiceIntegrationTest extends IntegrationTest {
         entityTwo = dataRepository.save(entityTwo);
 
         List<TestEntity> result = (List<TestEntity>) syncService.write(Arrays.asList(
-                Sync.of(entityOne, SyncType.UPDATE, null),
-                Sync.of(entityTwo, SyncType.UPDATE, null)));
+                Sync.of(entityOne, SyncType.UPDATE, null, null),
+                Sync.of(entityTwo, SyncType.UPDATE, null, null)));
 
         assertThat(result.get(0).getInnerEntity()).isSameAs(result.get(1).getInnerEntity());
     }

@@ -179,12 +179,12 @@ public class AuditSyncService implements SyncService {
         switch (auditLog.getAction()) {
             case CREATE:
                 object = unproxy(auditLog.getEntity());
-                return Sync.of(object, SyncType.CREATE, auditLog.getNumber());
+                return Sync.of(object, SyncType.CREATE, auditLog.getNumber(), auditLog.getTransactionId());
             case UPDATE:
                 object = unproxy(auditLog.getEntity());
-                return Sync.of(object, SyncType.UPDATE, auditLog.getNumber());
+                return Sync.of(object, SyncType.UPDATE, auditLog.getNumber(), auditLog.getTransactionId());
             case DELETE:
-                return Sync.of(toDeleted(auditLog), SyncType.DELETE, auditLog.getNumber());
+                return Sync.of(toDeleted(auditLog), SyncType.DELETE, auditLog.getNumber(), auditLog.getTransactionId());
             default:
                 throw new SyncException("Unknown auditLog action " + auditLog.getAction());
         }
@@ -227,7 +227,7 @@ public class AuditSyncService implements SyncService {
                     auditLog.getAction() != DataAction.DELETE
                             ? auditLog.getEntity()
                             : toDeleted(auditLog),
-                    null, null);
+                    null, null, null);
             objectMapper.writeValueAsString(sync);
         } catch (JsonProcessingException e) {
             throw new SyncException("Exception during cache update of AuditLog #"

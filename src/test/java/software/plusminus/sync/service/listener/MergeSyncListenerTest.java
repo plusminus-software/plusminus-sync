@@ -50,7 +50,7 @@ public class MergeSyncListenerTest extends IntegrationTest {
     @Test
     public void doNotProcessIfNoSupportedMergers() {
         doReturn(false).when(merger).supports(any());
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null, null);
         
         mergeSyncListener.onWrite(sync);
         
@@ -60,7 +60,7 @@ public class MergeSyncListenerTest extends IntegrationTest {
     @Test
     public void doNotProcessIfNoFoundEntityOnCreate() {
         entity.setUuid(UUID.randomUUID());
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null, null);
         
         mergeSyncListener.onWrite(sync);
         
@@ -70,7 +70,7 @@ public class MergeSyncListenerTest extends IntegrationTest {
     @Test
     public void doNotProcessIfNoFoundEntityOnUpdate() {
         entity.setId(321L);
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null, null);
         
         mergeSyncListener.onWrite(sync);
         
@@ -79,7 +79,7 @@ public class MergeSyncListenerTest extends IntegrationTest {
     
     @Test
     public void processIfThereAreSupportedMergers() {
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null, null);
         mergeSyncListener.onWrite(sync);
         verify(merger).process(eq(entity), same(sync));
     }
@@ -88,7 +88,7 @@ public class MergeSyncListenerTest extends IntegrationTest {
     public void createIsChangedToUpdateIfFound() {
         Long id = entity.getId();
         entity.setId(null);
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null, null);
         
         mergeSyncListener.onWrite(sync);
         
@@ -100,7 +100,7 @@ public class MergeSyncListenerTest extends IntegrationTest {
     public void versionIsSetToZeroIfCreateIsChangedToUpdate() {
         entity.setId(null);
         entity.setVersion(null);
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null, null);
         
         mergeSyncListener.onWrite(sync);
         
@@ -110,14 +110,14 @@ public class MergeSyncListenerTest extends IntegrationTest {
     
     @Test
     public void finderIsUsedOnCreateSync() {
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.CREATE, null, null);
         mergeSyncListener.onWrite(sync);
         verify(finder).find(entity);
     }
     
     @Test
     public void finderIsNotUsedOnUpdateSync() {
-        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null);
+        Sync<EntityWithUuid> sync = Sync.of(entity, SyncType.UPDATE, null, null);
         mergeSyncListener.onWrite(sync);
         verify(finder, never()).find(any());
     }

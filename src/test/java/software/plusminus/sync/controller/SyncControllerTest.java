@@ -60,7 +60,7 @@ public class SyncControllerTest {
     public void read() throws Exception {
         List<Sync<? extends ApiObject>> syncs = singletonList(Sync.of(
                 JsonUtils.fromJson("/json/entity.json", TestEntity.class),
-                SyncType.CREATE, 1L));
+                SyncType.CREATE, 1L, null));
         when(service.read(singletonList("TestEntity"), true, 20L, 30, Sort.Direction.DESC))
                 .thenReturn(syncs);
 

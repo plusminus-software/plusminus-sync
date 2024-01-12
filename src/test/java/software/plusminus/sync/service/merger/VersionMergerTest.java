@@ -32,7 +32,7 @@ public class VersionMergerTest {
         EntityWithoutVersion entity = new EntityWithoutVersion();
         entity.setId(10L);
         entity.setMyField("someText");
-        Sync<EntityWithoutVersion> sync = Sync.of(entity, SyncType.UPDATE, null);
+        Sync<EntityWithoutVersion> sync = Sync.of(entity, SyncType.UPDATE, null, null);
 
         boolean result = merger.supports(sync);
 
@@ -42,7 +42,7 @@ public class VersionMergerTest {
     @Test
     public void supportsEntitiesWithVersionField() {
         TestEntity inSync = readTestEntity();
-        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
+        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null, null);
 
         boolean result = merger.supports(sync);
 
@@ -57,7 +57,7 @@ public class VersionMergerTest {
         TestEntity inSync = readTestEntity();
         inSync.setVersion(5L);
         inSync.setInnerEntity(new InnerEntity());
-        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
+        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null, null);
         
         merger.process(current, sync);
         
@@ -80,7 +80,7 @@ public class VersionMergerTest {
         TestEntity inSync = readTestEntity();
         inSync.setVersion(5L);
         inSync.setInnerEntity(isSyncInnerEntity);
-        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
+        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null, null);
         
         merger.process(current, sync);
         
@@ -95,7 +95,7 @@ public class VersionMergerTest {
         TestEntity inSync = readTestEntity();
         inSync.setVersion(5L);
         inSync.setMyField("different");
-        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
+        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null, null);
         
         merger.process(current, sync);
         
@@ -113,7 +113,7 @@ public class VersionMergerTest {
         TestEntity inSync = readTestEntity();
         inSync.setMyField("value to update");
         inSync.setVersion(3L);
-        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
+        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null, null);
 
         merger.process(current, sync);
 
@@ -135,7 +135,7 @@ public class VersionMergerTest {
         TestEntity inSync = readTestEntity();
         inSync.setVersion(5L);
         inSync.setEmbeddedObject(isSyncEmbedded);
-        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null);
+        Sync<TestEntity> sync = Sync.of(inSync, SyncType.UPDATE, null, null);
 
         merger.process(current, sync);
 

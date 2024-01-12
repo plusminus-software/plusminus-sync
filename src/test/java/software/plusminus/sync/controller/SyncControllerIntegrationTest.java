@@ -51,6 +51,7 @@ public class SyncControllerIntegrationTest extends IntegrationTest {
     private static final String TENANT = "localhost";
     private static final String CURRENT_DEVICE = "CurrentDevice";
     private static final String OTHER_DEVICE = "OtherDevice";
+    private static final UUID TRANSACTION_ID = UUID.fromString("3a37e67d-a8b2-4c35-9e6f-a4e4b686ffb5");
 
     @Autowired
     private MockMvc mvc;
@@ -115,8 +116,8 @@ public class SyncControllerIntegrationTest extends IntegrationTest {
     @Test
     public void read() throws Exception {
         List<Sync<TestEntity>> actions = Arrays.asList(
-                Sync.of(entitySoftlyDeleted, SyncType.CREATE, 5L),
-                Sync.of(entity2, SyncType.CREATE, 2L));
+                Sync.of(entitySoftlyDeleted, SyncType.CREATE, 5L, null),
+                Sync.of(entity2, SyncType.CREATE, 2L, null));
 
         String body = mvc
                 .perform(get("/sync?types=TestEntity&excludeCurrentDevice=false&offset=1&size=10&direction=DESC")
@@ -133,9 +134,9 @@ public class SyncControllerIntegrationTest extends IntegrationTest {
     @Test
     public void readWithDefaultParameters() throws Exception {
         List<Sync<TestEntity>> actions = Arrays.asList(
-                Sync.of(entity1, SyncType.CREATE, 1L),
-                Sync.of(entity2, SyncType.CREATE, 2L),
-                Sync.of(entitySoftlyDeleted, SyncType.CREATE, 5L));
+                Sync.of(entity1, SyncType.CREATE, 1L, null),
+                Sync.of(entity2, SyncType.CREATE, 2L, null),
+                Sync.of(entitySoftlyDeleted, SyncType.CREATE, 5L, null));
 
         String body = mvc.perform(get("/sync?types=TestEntity")
                 .cookie(authenticationCookie()))
@@ -154,7 +155,7 @@ public class SyncControllerIntegrationTest extends IntegrationTest {
         entity2 = merge(OTHER_DEVICE, entity2);
 
         List<Sync<TestEntity>> actions = Collections.singletonList(
-                Sync.of(entity2, SyncType.UPDATE, 6L));
+                Sync.of(entity2, SyncType.UPDATE, 6L, null));
 
         String body = mvc.perform(get("/sync?types=TestEntity&offset=5")
                 .cookie(authenticationCookie()))
@@ -198,14 +199,14 @@ public class SyncControllerIntegrationTest extends IntegrationTest {
         newEntity.setMyField("new entity field");
 
         List<Sync<TestEntity>> items = Arrays.asList(
-                Sync.of(entityOne, SyncType.UPDATE, null),
-                Sync.of(entityTwo, SyncType.DELETE, null),
-                Sync.of(newEntity, SyncType.CREATE, null));
+                Sync.of(entityOne, SyncType.UPDATE, null, null),
+                Sync.of(entityTwo, SyncType.DELETE, null, null),
+                Sync.of(newEntity, SyncType.CREATE, null, null));
         String json = mapper.writerFor(new TypeReference<List<Sync<TestEntity>>>() {
         })
                 .writeValueAsString(items);
 
-        String body = mvc.perform(post("/sync")
+        String body = mvc.perform(post("/sync?transaction=" + TRANSACTION_ID)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
                 .cookie(authenticationCookie()))
@@ -253,7 +254,7 @@ public class SyncControllerIntegrationTest extends IntegrationTest {
         product.setTenant(TENANT);
 
         String json = objectMapper.writeValueAsString(
-                Collections.singletonList(Sync.of(product, SyncType.CREATE, null)));
+                Collections.singletonList(Sync.of(product, SyncType.CREATE, null, null)));
         String body = mvc.perform(post("/sync")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)

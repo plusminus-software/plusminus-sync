@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
@@ -71,17 +72,22 @@ public class AuditSyncServiceTest {
         TestEntity entity2 = readTestEntity();
         entity1.setId(3L);
         Deleted deleted = Deleted.of(TestEntity.class.getSimpleName(), 4L);
+        UUID transaction1 = UUID.randomUUID();
+        UUID transaction2 = UUID.randomUUID();
 
         AuditLog<TestEntity> auditLog1 = new AuditLog<>();
         auditLog1.setNumber(5L);
+        auditLog1.setTransactionId(transaction1);
         auditLog1.setEntity(entity1);
         auditLog1.setAction(DataAction.CREATE);
         AuditLog<TestEntity> auditLog2 = new AuditLog<>();
         auditLog2.setNumber(6L);
         auditLog2.setEntity(entity2);
+        auditLog2.setTransactionId(transaction2);
         auditLog2.setAction(DataAction.UPDATE);
         AuditLog<TestEntity> auditLog3 = new AuditLog<>();
         auditLog3.setNumber(7L);
+        auditLog3.setTransactionId(null);
         auditLog3.setEntityId(4L);
         auditLog3.setEntityType(TestEntity.class.getName());
         auditLog3.setAction(DataAction.DELETE);
@@ -107,9 +113,9 @@ public class AuditSyncServiceTest {
 
         // then
         assertThat(entities).containsExactly(
-                Sync.of(entity1, SyncType.CREATE, 5L),
-                Sync.of(entity2, SyncType.UPDATE, 6L),
-                Sync.of(deleted, SyncType.DELETE, 7L));
+                Sync.of(entity1, SyncType.CREATE, 5L, transaction1),
+                Sync.of(entity2, SyncType.UPDATE, 6L, transaction2),
+                Sync.of(deleted, SyncType.DELETE, 7L, null));
     }
     
     @Test(expected = SyncException.class)
